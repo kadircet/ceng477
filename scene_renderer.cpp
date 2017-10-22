@@ -1,17 +1,17 @@
 #include <limits>
 #include <cmath>
 #include "scene_renderer.h"
-
+#include <iostream>
 using namespace parser;
 
 constexpr const Vec3i red{255,0,0};
 
 float SceneRenderer::DoesIntersect(const Vec3f& e, const Vec3f& s, const Mesh& mesh) {
-    return 0.0f;
+    return std::numeric_limits<float>::infinity();
 }
 
 float SceneRenderer::DoesIntersect(const Vec3f& e, const Vec3f& s, const Triangle& triangle) {
-    return 0.0f;
+    return std::numeric_limits<float>::infinity();
 }
 
 float SceneRenderer::DoesIntersect(const Vec3f& e, const Vec3f& s, const Sphere& sphere) {
@@ -65,6 +65,7 @@ Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera& camera) {
 
   for(const Triangle& obj : scene_.triangles) {
     float t = DoesIntersect(e, s, obj);
+//    std::cout<<t<<std::endl;
     if(t<tmin) {
       tmin = t;
       color = red;
@@ -72,6 +73,7 @@ Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera& camera) {
   }
   for(const Sphere& obj : scene_.spheres) {
     float t = DoesIntersect(e, s, obj);
+//    std::cout<<t<<std::endl;
     if(t<tmin) {
       tmin = t;
       color = red;
@@ -79,6 +81,7 @@ Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera& camera) {
   }
   for(const Mesh& obj : scene_.meshes) {
     float t = DoesIntersect(e, s, obj);
+//    std::cout<<t<<std::endl;
     if(t<tmin) {
       tmin = t;
       color = red;
