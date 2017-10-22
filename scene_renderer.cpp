@@ -30,12 +30,14 @@ float SceneRenderer::DoesIntersect(const Vec3f& e, const Vec3f& s, const Face& f
     return std::numeric_limits<float>::infinity();
 }
 
-float SceneRenderer::DoesIntersect(const Vec3f& e, const Vec3f& s, const Mesh& mesh) {
+float SceneRenderer::DoesIntersect(const Vec3f& e, const Vec3f& s,
+    const Mesh& mesh, Face& intersecting_face) {
   float tmin = std::numeric_limits<float>::infinity();
   for(const Face& face : mesh.faces) {
     const float t = DoesIntersect(e, s, face);
     if(t<tmin) {
       tmin = t;
+      intersecting_face = face;
     }
   }
   return tmin;
@@ -89,8 +91,11 @@ Vec3f SceneRenderer::CalculateS(int i, int j, const Camera& camera) {
 }
 
 Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera& camera) {
-  Vec3i color = scene_.background_color;
+  //TODO(kadircet): Should we clamp at each step, or only at the final
+  //stage?
+  Vec3f color = scene_.background_color;
   int material_id = -1;
+  Vec3f normal;
   float tmin = std::numeric_limits<float>::infinity();
   const Vec3f e = camera.position;
   const Vec3f s = CalculateS(i, j, camera);
@@ -100,6 +105,7 @@ Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera& camera) {
     if(t<tmin) {
       tmin = t;
       material_id = obj.material_id;
+      normal = obj.indices.normal;
     }
   }
   for(const Sphere& obj : scene_.spheres) {
@@ -107,22 +113,42 @@ Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera& camera) {
     if(t<tmin) {
       tmin = t;
       material_id = obj.material_id;
+      normal = (s-e)*t-scene_.vertex_data[obj.center_vertex_id];
+      normal /= obj.radius;
     }
   }
+  parser::Face face;
   for(const Mesh& obj : scene_.meshes) {
-    float t = DoesIntersect(e, s, obj);
+    float t = DoesIntersect(e, s, obj, face);
     if(t<tmin) {
       tmin = t;
       material_id = obj.material_id;
+      normal = face.normal;
     }
   }
 
   if(material_id!=-1) {
-    color = scene_.ambient_light.PointWise(
-	scene_.materials[material_id].ambient).ToVec3i();
+    const Material material = scene_.materials[material_id];
+    color = scene_.ambient_light.PointWise(material.ambient);
+
+    const Vec3f intersection_point = e+(s-e)*tmin;
+    const Vec3f w0 = e-intersection_point;
+    if(w0*normal<.0) {
+      normal *= -1;
+    }
+    for(const PointLight& light : scene_.point_lights) {
+      Vec3f wi = (light.position-intersection_point);
+      const float r_square = wi*wi;
+      wi.Normalize();
+
+      const float cos_theta = wi*normal;
+      const float cos_thetap = cos_theta>0.?cos_theta:0.;
+      color += (material.diffuse*cos_thetap)
+	.PointWise(light.intensity)/r_square;
+    }
   }
 
-  return color;
+  return color.ToVec3i();
 }
 
 Vec3i* SceneRenderer::RenderImage(const Camera& camera) {

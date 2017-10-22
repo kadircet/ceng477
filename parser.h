@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <cmath>
 
 namespace parser
 {
@@ -42,6 +43,12 @@ namespace parser
             this->z = z;
         }
 
+	Vec3f(const Vec3i& rhs) {
+	  this->x = rhs.x;
+	  this->y = rhs.y;
+	  this->z = rhs.z;
+	}
+
         Vec3f operator+(const Vec3f& rhs) const {
             return Vec3f(x + rhs.x,
                         y + rhs.y,
@@ -63,6 +70,32 @@ namespace parser
             return Vec3f(x*rhs, y*rhs, z*rhs);
         }
 
+        Vec3f operator/(const float& rhs) {
+	  Vec3f result(x/rhs,y/rhs,z/rhs);
+	  return result;
+        }
+
+        Vec3f& operator/=(const float& rhs) {
+	  x/=rhs;
+	  y/=rhs;
+	  z/=rhs;
+	  return *this;
+        }
+
+        Vec3f& operator*=(const float& rhs) {
+	  x*=rhs;
+	  y*=rhs;
+	  z*=rhs;
+	  return *this;
+        }
+
+        Vec3f& operator+=(const Vec3f& rhs) {
+	  x+=rhs.x;
+	  y+=rhs.y;
+	  z+=rhs.z;
+	  return *this;
+        }
+
         Vec3f CrossProduct(const Vec3f& rhs) const {
             return Vec3f(y * rhs.z - z * rhs.y,
                         z * rhs.x - x * rhs.z,
@@ -71,6 +104,14 @@ namespace parser
 
 	Vec3f PointWise(const Vec3f& rhs) const {
 	  return Vec3f(x*rhs.x, y*rhs.y, z*rhs.z);
+	}
+
+	float Length() const {
+	  return sqrt(*this**this);
+	}
+
+	Vec3f& Normalize() {
+	  *this /= this->Length();
 	}
 
 	Vec3i ToVec3i() const {
@@ -127,7 +168,7 @@ namespace parser
 	  const Vec3f v0 = vertex_data[v0_id];
 	  const Vec3f e1 = vertex_data[v1_id] - v0;
 	  const Vec3f e2 = vertex_data[v2_id] - v0;
-	  normal = e2.CrossProduct(e1);
+	  normal = e2.CrossProduct(e1).Normalize();
 	}
     };
 

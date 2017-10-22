@@ -10,7 +10,8 @@ private:
   float DoesIntersect(const parser::Vec3f& e,
       const parser::Vec3f& s, const parser::Face& face);
   float DoesIntersect(const parser::Vec3f& e,
-      const parser::Vec3f& s, const parser::Mesh& mesh);
+      const parser::Vec3f& s, const parser::Mesh& mesh,
+      parser::Face& intersecting_face);
   float DoesIntersect(const parser::Vec3f& e,
       const parser::Vec3f& s, const parser::Triangle& triangle);
   float DoesIntersect(const parser::Vec3f& e,
