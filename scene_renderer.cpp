@@ -3,6 +3,17 @@
 
 using namespace parser;
 
+bool SceneRenderer::DoesIntersect(const Vec3f& e, const Vec3f& s, const Mesh& mesh) {
+    return false;
+}
+
+bool SceneRenderer::DoesIntersect(const Vec3f& e, const Vec3f& s, cont Triangle& triangle) {
+    return false;
+}
+
+bool SceneRenderer::DoesIntersect(const Vec3f& e, const Vec3f& s, const Sphere& sphere) {
+    return false;
+
 Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera& camera) {
   Vec3i color = scene_.background_color;
   float tmin = std::numeric_limits<float>::infinity();
