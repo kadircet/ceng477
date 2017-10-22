@@ -70,7 +70,7 @@ namespace parser
             return Vec3f(x*rhs, y*rhs, z*rhs);
         }
 
-        Vec3f operator/(const float& rhs) {
+        Vec3f operator/(const float& rhs) const {
 	  Vec3f result(x/rhs,y/rhs,z/rhs);
 	  return result;
         }
@@ -168,7 +168,8 @@ namespace parser
 	  const Vec3f v0 = vertex_data[v0_id];
 	  const Vec3f e1 = vertex_data[v1_id] - v0;
 	  const Vec3f e2 = vertex_data[v2_id] - v0;
-	  normal = e2.CrossProduct(e1).Normalize();
+	  normal = e2.CrossProduct(e1);
+	  normal.Normalize();
 	}
     };
 

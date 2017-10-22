@@ -5,7 +5,8 @@
 #include <iostream>
 using namespace parser;
 
-constexpr const Vec3i red{255,0,0};
+constexpr const float kEpsilon = 1e-6;
+
 inline bool SameSide(const Vec3f& point, const Vec3f& vertex_c, 
             const Vec3f& vertex_a, const Vec3f& vertex_b)
 {
@@ -56,10 +57,10 @@ float SceneRenderer::DoesIntersect(const Vec3f& e, const Vec3f& s, const Sphere&
     const float norm_of_sphere_to_camera_squared = sphere_to_camera * sphere_to_camera;
     const float radius_squared = sphere.radius * sphere.radius;  
     const float determinant = distance_times_sphere_to_camera * distance_times_sphere_to_camera - norm_of_distance_squared * (norm_of_sphere_to_camera_squared - radius_squared); 
-    if(determinant < 0.0f) {
+    if(determinant < kEpsilon) {
         return std::numeric_limits<float>::infinity();
     }
-    else if(determinant == 0.0f) {
+    else if(fabs(determinant) <= kEpsilon) {
         return -distance_times_sphere_to_camera / norm_of_distance_squared;
     }
     else 
@@ -141,10 +142,18 @@ Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera& camera) {
       const float r_square = wi*wi;
       wi.Normalize();
 
+      Vec3f h = wi+w0;
+      h.Normalize();
+
+      const Vec3f intensity = light.intensity/r_square;
       const float cos_theta = wi*normal;
       const float cos_thetap = cos_theta>0.?cos_theta:0.;
-      color += (material.diffuse*cos_thetap)
-	.PointWise(light.intensity)/r_square;
+      color += (material.diffuse*cos_thetap).PointWise(intensity);
+
+      const float cos_alpha = normal*h;
+      const float cos_alphap = cos_alpha>0.?cos_alpha:0.;
+      color += (material.specular*pow(
+	    cos_alphap, material.phong_exponent)).PointWise(intensity);
     }
   }
 
