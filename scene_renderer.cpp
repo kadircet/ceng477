@@ -34,11 +34,18 @@ float SceneRenderer::DoesIntersect(const Vec3f& e, const Vec3f& s, const Face& f
 }
 
 float SceneRenderer::DoesIntersect(const Vec3f& e, const Vec3f& s, const Mesh& mesh) {
-  return std::numeric_limits<float>::infinity();
+  float tmin = std::numeric_limits<float>::infinity();
+  for(const Face& face : mesh.faces) {
+    const float t = DoesIntersect(e, s, face);
+    if(t<tmin) {
+      tmin = t;
+    }
+  }
+  return tmin;
 }
 
 float SceneRenderer::DoesIntersect(const Vec3f& e, const Vec3f& s, const Triangle& triangle) {
-    return std::numeric_limits<float>::infinity();
+  return DoesIntersect(e, s, triangle.indices);
 }
 
 float SceneRenderer::DoesIntersect(const Vec3f& e, const Vec3f& s, const Sphere& sphere) {
