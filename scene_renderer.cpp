@@ -1,8 +1,11 @@
+#include <limits>
 #include "scene_renderer.h"
+
 using namespace parser;
 
 Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera& camera) {
   Vec3i color = scene_.background_color;
+  float tmin = std::numeric_limits<float>::infinity();
 
   return color;
 }
