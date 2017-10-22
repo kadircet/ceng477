@@ -90,6 +90,7 @@ Vec3f SceneRenderer::CalculateS(int i, int j, const Camera& camera) {
 
 Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera& camera) {
   Vec3i color = scene_.background_color;
+  int material_id = -1;
   float tmin = std::numeric_limits<float>::infinity();
   const Vec3f e = camera.position;
   const Vec3f s = CalculateS(i, j, camera);
@@ -98,22 +99,27 @@ Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera& camera) {
     float t = DoesIntersect(e, s, obj);
     if(t<tmin) {
       tmin = t;
-      color = red;
+      material_id = obj.material_id;
     }
   }
   for(const Sphere& obj : scene_.spheres) {
     float t = DoesIntersect(e, s, obj);
     if(t<tmin) {
       tmin = t;
-      color = red;
+      material_id = obj.material_id;
     }
   }
   for(const Mesh& obj : scene_.meshes) {
     float t = DoesIntersect(e, s, obj);
     if(t<tmin) {
       tmin = t;
-      color = red;
+      material_id = obj.material_id;
     }
+  }
+
+  if(material_id!=-1) {
+    color = scene_.ambient_light.PointWise(
+	scene_.materials[material_id].ambient).ToVec3i();
   }
 
   return color;

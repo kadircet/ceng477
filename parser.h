@@ -2,13 +2,32 @@
 #define __HW1__PARSER__
 
 #include <string>
-#include <iostream>
 #include <vector>
+#include <iostream>
 
 namespace parser
 {
     //Notice that all the structures are as simple as possible
     //so that you are not enforced to adopt any style or design.
+  namespace {
+    int max(int a, int b) {
+      return a>b?a:b;
+    }
+
+    int min(int a, int b) {
+      return a<b?a:b;
+    }
+
+    int round(float a) {
+      return (int)(a>0?a+.5:a-.5);
+    }
+  }
+
+    struct Vec3i
+    {
+        int x, y, z;
+    };
+
     struct Vec3f
     {
         float x, y, z;
@@ -35,6 +54,7 @@ namespace parser
                         z - rhs.z);
         }
 
+	// Dot product.
         float operator*(const Vec3f& rhs) const {
             return x * rhs.x + y * rhs.y + z * rhs.z;
         }
@@ -49,14 +69,21 @@ namespace parser
                         x * rhs.y - y * rhs.x);
         }
 
+	Vec3f PointWise(const Vec3f& rhs) const {
+	  return Vec3f(x*rhs.x, y*rhs.y, z*rhs.z);
+	}
+
+	Vec3i ToVec3i() const {
+	  Vec3i res;
+	  res.x = min(255, max(0, round(x)));
+	  res.y = min(255, max(0, round(y)));
+	  res.z = min(255, max(0, round(z)));
+	  return res;
+	}
+
 	void Print() const {
 	  std::cout << x << ' ' << y << ' ' << z << std::endl;
 	}
-    };
-
-    struct Vec3i
-    {
-        int x, y, z;
     };
 
     struct Vec4f
