@@ -4,17 +4,16 @@
 using namespace parser;
 
 constexpr const Vec3i red(255,0,0);
-
 float SceneRenderer::DoesIntersect(const Vec3f& e, const Vec3f& s, const Mesh& mesh) {
-    return false;
+    return 0.0f;
 }
 
-float SceneRenderer::DoesIntersect(const Vec3f& e, const Vec3f& s, cont Triangle& triangle) {
-    return false;
+float SceneRenderer::DoesIntersect(const Vec3f& e, const Vec3f& s, const Triangle& triangle) {
+    return 0.0f;
 }
 
 float SceneRenderer::DoesIntersect(const Vec3f& e, const Vec3f& s, const Sphere& sphere) {
-    return false;
+    return 0.0f;
 }
 
 Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera& camera) {
