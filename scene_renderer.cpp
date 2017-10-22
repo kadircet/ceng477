@@ -14,13 +14,25 @@ float SceneRenderer::DoesIntersect(const Vec3f& e, const Vec3f& s, const Triangl
 
 float SceneRenderer::DoesIntersect(const Vec3f& e, const Vec3f& s, const Sphere& sphere) {
     Vec3f distance = s - e;
-    Vec3f centerOfSphere = scene_.vertex_data[sphere.center_vertex_id];
-    Vec3f sphereToCamera = e - centerOfSphere;
-    const float distanceTimesSphereToCamera = distance * sphereToCamera;
-    const float normOfDistanceSquared = distance * distance;
-    const float normOfSphereToCameraSquared = sphereToCamera * sphereToCamera;
-    const float radiusSquared = sphere.radius * sphere.radius;  
-    return 0.0f;
+    Vec3f center_of_sphere = scene_.vertex_data[sphere.center_vertex_id];
+    Vec3f sphere_to_camera = e - center_of_sphere;
+    const float distance_times_sphere_to_camera = distance * sphere_to_camera;
+    const float norm_of_distance_squared = distance * distance;
+    const float norm_of_sphere_to_camera_squared = sphere_to_camera * sphere_to_camera;
+    const float radius_squared = sphere.radius * sphere.radius;  
+    const float determinant = distance_times_sphere_to_camera * distance_times_sphere_to_camera - norm_of_distance_squared * (norm_of_sphere_to_camera_squared - radius_squared); 
+    if(determinant < 0.0f) {
+        return std::numeric_limits<float>::infinity();
+    }
+    else if(determinant == 0.0f) {
+        return -distance_times_sphere_to_camera / norm_of_distance_squared;
+    }
+    else 
+    {
+        float t1 = (-distance_times_sphere_to_camera + sqrt(determinant)) / norm_of_distance_squared;
+        float t2 = (-distance_times_sphere_to_camera - sqrt(determinant)) / norm_of_distance_squared;
+        return fmin(t1,t2);
+    }
 }
 
 Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera& camera) {
