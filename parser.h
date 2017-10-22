@@ -22,26 +22,26 @@ namespace parser
             this->z = z;
         }
 
-        Vec3f operator+(Vec3f& rhs) {
+        Vec3f operator+(const Vec3f& rhs) const {
             return Vec3f(x + rhs.x,
                         y + rhs.y,
                         z + rhs.z);
         }
 
-        Vec3f operator-(Vec3f& rhs) {
+        Vec3f operator-(const Vec3f& rhs) const {
             return Vec3f(x - rhs.x,
                         y - rhs.y,
                         z - rhs.z);
         }
 
-        float operator*(Vec3f& rhs) {
+        float operator*(const Vec3f& rhs) const {
             return x * rhs.x + y * rhs.y + z * rhs.z;
         }
 
-        Vec3f operator*(float& rhs) {
+        Vec3f operator*(const float& rhs) const {
             return Vec3f(x*rhs, y*rhs, z*rhs);
         }
-        Vec3f CrossProduct(Vec3f& rhs) const {
+        Vec3f CrossProduct(const Vec3f& rhs) const {
             return Vec3f(y * rhs.z - z * rhs.y,
                         z * rhs.x - x * rhs.z,
                         x * rhs.y - y * rhs.x);
