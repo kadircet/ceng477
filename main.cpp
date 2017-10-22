@@ -4,19 +4,6 @@
 
 typedef unsigned char RGB[3];
 
-class SceneRenderer {
-private:
-  parser::Scene scene;
-public:
-  SceneRenderer(const string& scene_path) {
-    scene.loadFromXml(scene_path);
-  }
-
-  const std::vector<parser::Camera>& Cameras() {
-    return scene.cameras;
-  }
-};
-
 int main(int argc, char* argv[])
 {
   SceneRenderer scene_renderer(argv[1]);
