@@ -41,7 +41,7 @@ namespace parser
         Vec3f operator*(float& rhs) {
             return Vec3f(x*rhs, y*rhs, z*rhs);
         }
-        Vec3f CrossProduct(Vec3f& rhs) {
+        Vec3f CrossProduct(Vec3f& rhs) const {
             return Vec3f(y * rhs.z - z * rhs.y,
                         z * rhs.x - x * rhs.z,
                         x * rhs.y - y * rhs.x);
