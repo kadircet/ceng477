@@ -1,32 +1,34 @@
 #ifndef _SCENE_RENDERER_H
 #define _SCENE_RENDERER_H
 
-struct Pixel {
-  unsigned char r,g,b;
-};
+#include "parser.h"
 
 class SceneRenderer {
 private:
   parser::Scene scene_;
 
-  bool DoesIntersect(const Vec3f& e, const Vec3f& s, const Mesh& mesh);
-  bool DoesIntersect(const Vec3f& e, const Vec3f& s, const Triangle& triangle);
-  bool DoesIntersect(const Vec3f& e, const Vec3f& s, const Sphere& sphere);
+  bool DoesIntersect(const parser::Vec3f& e,
+      const parser::Vec3f& s, const parser::Mesh& mesh);
+  bool DoesIntersect(const parser::Vec3f& e,
+      const parser::Vec3f& s, const parser::Triangle& triangle);
+  bool DoesIntersect(const parser::Vec3f& e,
+      const parser::Vec3f& s, const parser::Sphere& sphere);
 
-  Vec3f CalculateS(int i, int j, const parser::Camera& camera);
+  parser::Vec3f CalculateS(int i, int j, const parser::Camera& camera);
 
-  Pixel RenderPixel(int i, int j, const parser::Camera& camera);
+  parser::Vec3i RenderPixel(int i, int j,
+      const parser::Camera& camera);
   
 public:
-  SceneRenderer(const string& scene_path) {
+  SceneRenderer(const char* scene_path) {
     scene_.loadFromXml(scene_path);
   }
 
   const std::vector<parser::Camera>& Cameras() {
-    return scene.cameras;
+    return scene_.cameras;
   }
 
-  Pixel* RenderImage(const parser::Camera& camera);
+  parser::Vec3i* RenderImage(const parser::Camera& camera);
 };
 
 #endif
