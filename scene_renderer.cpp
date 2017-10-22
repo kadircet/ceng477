@@ -3,20 +3,47 @@
 
 using namespace parser;
 
-bool SceneRenderer::DoesIntersect(const Vec3f& e, const Vec3f& s, const Mesh& mesh) {
+constexpr const Vec3i red(255,0,0);
+
+float SceneRenderer::DoesIntersect(const Vec3f& e, const Vec3f& s, const Mesh& mesh) {
     return false;
 }
 
-bool SceneRenderer::DoesIntersect(const Vec3f& e, const Vec3f& s, cont Triangle& triangle) {
+float SceneRenderer::DoesIntersect(const Vec3f& e, const Vec3f& s, cont Triangle& triangle) {
     return false;
 }
 
-bool SceneRenderer::DoesIntersect(const Vec3f& e, const Vec3f& s, const Sphere& sphere) {
+float SceneRenderer::DoesIntersect(const Vec3f& e, const Vec3f& s, const Sphere& sphere) {
     return false;
+}
 
 Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera& camera) {
   Vec3i color = scene_.background_color;
   float tmin = std::numeric_limits<float>::infinity();
+  const Vec3f e = camera.position;
+  const Vec3f s = CalculateS(i, j, camera);
+
+  for(const Triangle& obj : triangles) {
+    float t = DoesIntersect(e, s, obj);
+    if(t<tmin) {
+      tmin = t;
+      color = red;
+    }
+  }
+  for(const Sphere& obj : spheres) {
+    float t = DoesIntersect(e, s, obj);
+    if(t<tmin) {
+      tmin = t;
+      color = red;
+    }
+  }
+  for(const Mesh& obj : meshes) {
+    float t = DoesIntersect(e, s, obj);
+    if(t<tmin) {
+      tmin = t;
+      color = red;
+    }
+  }
 
   return color;
 }
