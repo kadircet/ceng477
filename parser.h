@@ -2,6 +2,7 @@
 #define __HW1__PARSER__
 
 #include <string>
+#include <iostream>
 #include <vector>
 
 namespace parser
@@ -47,6 +48,10 @@ namespace parser
                         z * rhs.x - x * rhs.z,
                         x * rhs.y - y * rhs.x);
         }
+
+	void Print() const {
+	  std::cout << x << ' ' << y << ' ' << z << std::endl;
+	}
     };
 
     struct Vec3i

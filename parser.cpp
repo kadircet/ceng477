@@ -157,6 +157,7 @@ void parser::Scene::loadFromXml(const std::string& filepath)
         child = element->FirstChildElement("Material");
         stream << child->GetText() << std::endl;
         stream >> mesh.material_id;
+	mesh.material_id--;
 
         child = element->FirstChildElement("Faces");
         stream << child->GetText() << std::endl;
@@ -164,6 +165,9 @@ void parser::Scene::loadFromXml(const std::string& filepath)
         while (!(stream >> face.v0_id).eof())
         {
             stream >> face.v1_id >> face.v2_id;
+	    face.v0_id--;
+	    face.v1_id--;
+	    face.v2_id--;
             mesh.faces.push_back(face);
         }
         stream.clear();
@@ -183,10 +187,15 @@ void parser::Scene::loadFromXml(const std::string& filepath)
         child = element->FirstChildElement("Material");
         stream << child->GetText() << std::endl;
         stream >> triangle.material_id;
+	triangle.material_id--;
 
         child = element->FirstChildElement("Indices");
         stream << child->GetText() << std::endl;
         stream >> triangle.indices.v0_id >> triangle.indices.v1_id >> triangle.indices.v2_id;
+
+	triangle.indices.v0_id--;
+	triangle.indices.v1_id--;
+	triangle.indices.v2_id--;
 
         triangles.push_back(triangle);
         element = element->NextSiblingElement("Triangle");
@@ -201,10 +210,12 @@ void parser::Scene::loadFromXml(const std::string& filepath)
         child = element->FirstChildElement("Material");
         stream << child->GetText() << std::endl;
         stream >> sphere.material_id;
+	sphere.material_id--;
 
         child = element->FirstChildElement("Center");
         stream << child->GetText() << std::endl;
         stream >> sphere.center_vertex_id;
+	sphere.center_vertex_id--;
 
         child = element->FirstChildElement("Radius");
         stream << child->GetText() << std::endl;

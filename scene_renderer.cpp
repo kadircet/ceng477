@@ -1,4 +1,5 @@
 #include <limits>
+#include <iostream>
 #include <cmath>
 #include "scene_renderer.h"
 
@@ -7,17 +8,17 @@ using namespace parser;
 constexpr const Vec3i red{255,0,0};
 
 float SceneRenderer::DoesIntersect(const Vec3f& e, const Vec3f& s, const Mesh& mesh) {
-    return 0.0f;
+    return std::numeric_limits<float>::infinity();
 }
 
 float SceneRenderer::DoesIntersect(const Vec3f& e, const Vec3f& s, const Triangle& triangle) {
-    return 0.0f;
+    return std::numeric_limits<float>::infinity();
 }
 
 float SceneRenderer::DoesIntersect(const Vec3f& e, const Vec3f& s, const Sphere& sphere) {
-    Vec3f distance = s - e;
-    Vec3f center_of_sphere = scene_.vertex_data[sphere.center_vertex_id];
-    Vec3f sphere_to_camera = e - center_of_sphere;
+    const Vec3f distance = s - e;
+    const Vec3f center_of_sphere = scene_.vertex_data[sphere.center_vertex_id];
+    const Vec3f sphere_to_camera = e - center_of_sphere;
     const float distance_times_sphere_to_camera = distance * sphere_to_camera;
     const float norm_of_distance_squared = distance * distance;
     const float norm_of_sphere_to_camera_squared = sphere_to_camera * sphere_to_camera;
