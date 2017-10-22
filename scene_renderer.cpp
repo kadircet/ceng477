@@ -7,8 +7,12 @@ using namespace parser;
 
 constexpr const Vec3i red{255,0,0};
 
+float SceneRenderer::DoesIntersect(const Vec3f& e, const Vec3f& s, const Face& face) {
+  return std::numeric_limits<float>::infinity();
+}
+
 float SceneRenderer::DoesIntersect(const Vec3f& e, const Vec3f& s, const Mesh& mesh) {
-    return std::numeric_limits<float>::infinity();
+  return std::numeric_limits<float>::infinity();
 }
 
 float SceneRenderer::DoesIntersect(const Vec3f& e, const Vec3f& s, const Triangle& triangle) {

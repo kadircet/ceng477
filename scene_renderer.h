@@ -8,6 +8,8 @@ private:
   parser::Scene scene_;
 
   float DoesIntersect(const parser::Vec3f& e,
+      const parser::Vec3f& s, const parser::Face& face);
+  float DoesIntersect(const parser::Vec3f& e,
       const parser::Vec3f& s, const parser::Mesh& mesh);
   float DoesIntersect(const parser::Vec3f& e,
       const parser::Vec3f& s, const parser::Triangle& triangle);
