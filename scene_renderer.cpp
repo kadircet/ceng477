@@ -1,10 +1,16 @@
 #include "scene_renderer.h"
 using namespace parser;
 
-Pixel* SceneRenderer::RenderImage(const Camera& camera) {
+Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera& camera) {
+  Vec3i color = scene_.background_color;
+
+  return color;
+}
+
+Vec3i* SceneRenderer::RenderImage(const Camera& camera) {
   const int width = camera.image_width;
   const int height = camera.image_height;
-  Pixel* result = new Pixel[width*height];
+  Vec3i* result = new Vec3i[width*height];
 
   for(int i=0;i<width;i++) {
     for(int j=0;j<height;j++) {

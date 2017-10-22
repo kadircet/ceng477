@@ -3,10 +3,6 @@
 
 #include "parser.h"
 
-struct Pixel {
-  unsigned char r,g,b;
-};
-
 class SceneRenderer {
 private:
   parser::Scene scene_;
@@ -20,7 +16,8 @@ private:
 
   parser::Vec3f CalculateS(int i, int j, const parser::Camera& camera);
 
-  Pixel RenderPixel(int i, int j, const parser::Camera& camera);
+  parser::Vec3i RenderPixel(int i, int j,
+      const parser::Camera& camera);
   
 public:
   SceneRenderer(const char* scene_path) {
@@ -31,7 +28,7 @@ public:
     return scene_.cameras;
   }
 
-  Pixel* RenderImage(const parser::Camera& camera);
+  parser::Vec3i* RenderImage(const parser::Camera& camera);
 };
 
 #endif
