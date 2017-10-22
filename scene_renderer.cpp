@@ -6,9 +6,31 @@
 using namespace parser;
 
 constexpr const Vec3i red{255,0,0};
-
+inline bool SameSide(const Vec3f& point, const Vec3f& vertex_c, 
+            const Vec3f& vertex_a, const Vec3f& vertex_b)
+{
+    const Vec3f vec_ba = vertex_b - vertex_a; 
+    const Vec3f vec_pa = point - vertex_a;
+    const Vec3f vec_ca = vertex_c - vertex_a;
+    return (vec_ba.CrossProduct(vec_pa))*(vec_ba.CrossProduct(vec_ca)) >= 0.0f;
+}
 float SceneRenderer::DoesIntersect(const Vec3f& e, const Vec3f& s, const Face& face) {
-  return std::numeric_limits<float>::infinity();
+    const Vec3f distance = s - e;
+    const Vec3f vertex_0 = scene_.vertex_data[face.v0_id];
+    const Vec3f vertex_1 = scene_.vertex_data[face.v1_id];
+    const Vec3f vertex_2 = scene_.vertex_data[face.v2_id];
+    const Vec3f vertex_to_camera = e - vertex_0;
+    const float t = (vertex_to_camera*face.normal)/(distance*face.normal);
+    const Vec3f point = e + (s - e) * t;
+    if( SameSide(point, vertex_0, vertex_1, vertex_2) &&
+        SameSide(point, vertex_1, vertex_0, vertex_2) &&
+        SameSide(point, vertex_2, vertex_0, vertex_1)) {
+        return t;
+    }
+    else {
+        return std::numeric_limits<float>::infinity();
+    }
+    
 }
 
 float SceneRenderer::DoesIntersect(const Vec3f& e, const Vec3f& s, const Mesh& mesh) {
