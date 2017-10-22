@@ -4,6 +4,8 @@
 
 using namespace parser;
 
+constexpr const Vec3i red{255,0,0};
+
 float SceneRenderer::DoesIntersect(const Vec3f& e, const Vec3f& s, const Mesh& mesh) {
     return 0.0f;
 }
@@ -35,9 +37,53 @@ float SceneRenderer::DoesIntersect(const Vec3f& e, const Vec3f& s, const Sphere&
     }
 }
 
+Vec3f SceneRenderer::CalculateS(int i, int j, const Camera& camera) {
+  const Vec4f view_plane = camera.near_plane;
+  const Vec3f gaze = camera.gaze;
+  const float dist = camera.near_distance;
+  const float l = view_plane.x;
+  const float r = view_plane.y;
+  const float b = view_plane.z;
+  const float t = view_plane.w;
+  const Vec3f v = camera.up;
+  const Vec3f u = gaze.CrossProduct(v);
+
+  const Vec3f m = camera.position + gaze*dist;
+  const Vec3f q = m + u*l + v*t;
+
+  const float su = (r-l)*(i+.5)/camera.image_width;
+  const float sv = (t-b)*(j+.5)/camera.image_height;
+
+  return q+u*su-v*sv;
+}
+
 Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera& camera) {
   Vec3i color = scene_.background_color;
   float tmin = std::numeric_limits<float>::infinity();
+  const Vec3f e = camera.position;
+  const Vec3f s = CalculateS(i, j, camera);
+
+  for(const Triangle& obj : scene_.triangles) {
+    float t = DoesIntersect(e, s, obj);
+    if(t<tmin) {
+      tmin = t;
+      color = red;
+    }
+  }
+  for(const Sphere& obj : scene_.spheres) {
+    float t = DoesIntersect(e, s, obj);
+    if(t<tmin) {
+      tmin = t;
+      color = red;
+    }
+  }
+  for(const Mesh& obj : scene_.meshes) {
+    float t = DoesIntersect(e, s, obj);
+    if(t<tmin) {
+      tmin = t;
+      color = red;
+    }
+  }
 
   return color;
 }
