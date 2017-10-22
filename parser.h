@@ -11,6 +11,32 @@ namespace parser
     struct Vec3f
     {
         float x, y, z;
+        
+        Vec3f(float x, float y, float z) {
+            this->x = x;
+            this->y = y;
+            this->z = z;
+        }
+
+        Vec3f operator+(struct Vec3f& rhs) {
+            return Vec3f(x + rhs.x,
+                        y + rhs.y,
+                        z + rhs.z);
+        }
+
+        Vec3f operator-(struct Vec3f& rhs) {
+            return Vec3f(x - rhs.x,
+                        y - rhs.y,
+                        z - rhs.z);
+        }
+
+        float operator*(struct Vec3f& rhs) {
+            return x * rhs.x + y * rhs.y + z * rhs.z;
+        }
+
+        Vec3f operator*(float& rhs) {
+            return Vec3f(x*rhs, y*rhs, z*rhs);
+        }
     };
 
     struct Vec3i
