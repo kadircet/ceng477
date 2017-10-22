@@ -1,6 +1,7 @@
 #include <iostream>
 #include "parser.h"
 #include "ppm.h"
+#include "scene_renderer.h"
 
 typedef unsigned char RGB[3];
 
