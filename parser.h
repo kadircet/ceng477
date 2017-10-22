@@ -110,7 +110,7 @@ namespace parser
 	  return sqrt(*this**this);
 	}
 
-	Vec3f& Normalize() {
+	void Normalize() {
 	  *this /= this->Length();
 	}
 
