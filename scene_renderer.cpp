@@ -66,7 +66,6 @@ Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera& camera) {
 
   for(const Triangle& obj : scene_.triangles) {
     float t = DoesIntersect(e, s, obj);
-//    std::cout<<t<<std::endl;
     if(t<tmin) {
       tmin = t;
       color = red;
@@ -74,7 +73,6 @@ Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera& camera) {
   }
   for(const Sphere& obj : scene_.spheres) {
     float t = DoesIntersect(e, s, obj);
-//    std::cout<<t<<std::endl;
     if(t<tmin) {
       tmin = t;
       color = red;
@@ -82,7 +80,6 @@ Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera& camera) {
   }
   for(const Mesh& obj : scene_.meshes) {
     float t = DoesIntersect(e, s, obj);
-//    std::cout<<t<<std::endl;
     if(t<tmin) {
       tmin = t;
       color = red;

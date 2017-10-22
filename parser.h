@@ -95,6 +95,13 @@ namespace parser
         int v0_id;
         int v1_id;
         int v2_id;
+	Vec3f normal;
+	void CalculateNormal(const std::vector<Vec3f>& vertex_data) {
+	  const Vec3f v0 = vertex_data[v0_id];
+	  const Vec3f e1 = vertex_data[v1_id] - v0;
+	  const Vec3f e2 = vertex_data[v2_id] - v0;
+	  normal = e2.CrossProduct(e1);
+	}
     };
 
     struct Mesh
