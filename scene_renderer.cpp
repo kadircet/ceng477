@@ -36,13 +36,13 @@ Vec3f SceneRenderer::CalculateS(int i, int j, const Camera& camera) {
   const Vec3f v = camera.up;
   const Vec3f u = gaze.CrossProduct(v);
 
-  const Vec3f m = camera.position + dist*gaze;
-  const Vec3f q = m + l*u + t*v;
+  const Vec3f m = camera.position + gaze*dist;
+  const Vec3f q = m + u*l + v*t;
 
   const float su = (r-l)*(i+.5)/camera.image_width;
   const float sv = (t-b)*(j+.5)/camera.image_height;
 
-  return q+su*u-sv*v;
+  return q+u*su-v*sv;
 }
 
 Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera& camera) {
