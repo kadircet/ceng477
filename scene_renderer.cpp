@@ -20,17 +20,14 @@ float SceneRenderer::DoesIntersect(const Vec3f& e, const Vec3f& s, const Face& f
     const Vec3f vertex_1 = scene_.vertex_data[face.v1_id];
     const Vec3f vertex_2 = scene_.vertex_data[face.v2_id];
     const Vec3f vertex_to_camera = e - vertex_0;
-    const float t = (vertex_to_camera*face.normal)/(distance*face.normal);
+    const float t = -(vertex_to_camera*face.normal)/(distance*face.normal);
     const Vec3f point = e + (s - e) * t;
     if( SameSide(point, vertex_0, vertex_1, vertex_2) &&
         SameSide(point, vertex_1, vertex_0, vertex_2) &&
         SameSide(point, vertex_2, vertex_0, vertex_1)) {
         return t;
     }
-    else {
-        return std::numeric_limits<float>::infinity();
-    }
-    
+    return std::numeric_limits<float>::infinity();
 }
 
 float SceneRenderer::DoesIntersect(const Vec3f& e, const Vec3f& s, const Mesh& mesh) {
@@ -127,9 +124,9 @@ Vec3i* SceneRenderer::RenderImage(const Camera& camera) {
   const int height = camera.image_height;
   Vec3i* result = new Vec3i[width*height];
 
-  for(int i=0;i<width;i++) {
-    for(int j=0;j<height;j++) {
-      result[i*height+j] = RenderPixel(i, j, camera);
+  for(int j=0;j<height;j++) {
+    for(int i=0;i<width;i++) {
+      result[j*width+i] = RenderPixel(i, j, camera);
     }
   }
 
