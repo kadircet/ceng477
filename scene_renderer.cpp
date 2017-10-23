@@ -108,7 +108,7 @@ Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera &camera) {
 
   for (const Triangle &obj : scene_.triangles) {
     float t = DoesIntersect(e, s, obj);
-    if (t < tmin) {
+    if (t < tmin && t > 0.0f) {
       tmin = t;
       material_id = obj.material_id;
       normal = obj.indices.normal;
@@ -116,7 +116,7 @@ Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera &camera) {
   }
   for (const Sphere &obj : scene_.spheres) {
     float t = DoesIntersect(e, s, obj);
-    if (t < tmin) {
+    if (t < tmin && t > 0.0f) {
       tmin = t;
       material_id = obj.material_id;
       normal = (s - e) * t - scene_.vertex_data[obj.center_vertex_id];
@@ -126,7 +126,7 @@ Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera &camera) {
   parser::Face face;
   for (const Mesh &obj : scene_.meshes) {
     float t = DoesIntersect(e, s, obj, face);
-    if (t < tmin) {
+    if (t < tmin && t > 0.0f) {
       tmin = t;
       material_id = obj.material_id;
       normal = face.normal;
@@ -138,11 +138,55 @@ Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera &camera) {
     color = scene_.ambient_light.PointWise(material.ambient);
 
     const Vec3f intersection_point = e + (s - e) * tmin;
-    const Vec3f w0 = e - intersection_point;
+    Vec3f w0 = e - intersection_point;
+    //TODO: should w0 be normalized?   
+    //In slides 3 w0 is the unit vector from s to e
+    //Check this @kadircet
+    w0.Normalize();
     if (w0 * normal < .0) {
       normal *= -1;
     }
     for (const PointLight &light : scene_.point_lights) {
+      
+      //Shadow check  
+      float tmin_shadow = std::numeric_limits<float>::infinity();
+      bool shadow_exists = false;
+      const Vec3f intersection_point_with_epsilon = intersection_point + 
+          (light.position - intersection_point) * scene_.shadow_ray_epsilon; 
+      for (const Triangle &obj : scene_.triangles) {
+        float t = DoesIntersect(intersection_point, light.position, obj);
+        if (t < tmin && t > 0.0f) {
+          shadow_exists = true;
+          break;
+        }
+      }
+      if (shadow_exists) {
+        continue;
+      }
+      for (const Sphere &obj : scene_.spheres) {
+        float t = DoesIntersect(intersection_point, light.position, obj);
+        if (t < tmin && t > 0.0f) {
+          shadow_exists = true;
+          break;
+        }
+      }
+      if (shadow_exists) {
+        continue;
+      }
+      parser::Face face;
+      for (const Mesh &obj : scene_.meshes) {
+        float t = DoesIntersect(intersection_point, light.position, obj, face);
+        if (t < tmin && t > 0.0f) {
+          shadow_exists = true;
+          break;
+        }
+      }
+      if (shadow_exists) {
+        continue;
+      }
+      // 
+
+
       Vec3f wi = (light.position - intersection_point);
       const float r_square = wi * wi;
       wi.Normalize();
