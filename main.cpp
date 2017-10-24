@@ -2,10 +2,11 @@
 #include "ppm.h"
 #include "scene_renderer.h"
 #include <iostream>
-
+#include <ctime>
 using namespace parser;
 
 int main(int argc, char *argv[]) {
+  time_t begin = time(NULL);
   SceneRenderer scene_renderer(argv[1]);
 
   for (const Camera &camera : scene_renderer.Cameras()) {
@@ -27,5 +28,9 @@ int main(int argc, char *argv[]) {
     write_ppm(camera.image_name.c_str(), image, width, height);
     delete[] image;
   }
+  time_t end = time(NULL);
+  int elapsed_seconds = difftime(end,begin);
+  std::cout << elapsed_seconds/60 << " minutes ";
+  std::cout << elapsed_seconds%60 << " seconds" << std::endl; 
   return 0;
 }
