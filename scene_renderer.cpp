@@ -14,15 +14,14 @@ inline bool SameSide(const Vec3f &point, const Vec3f &vertex_c,
   return (vec_ba.CrossProduct(vec_pa)) * (vec_ba.CrossProduct(vec_ca)) >= 0.0f;
 }
 
-float SceneRenderer::DoesIntersect(const Vec3f &e, const Vec3f &s,
+float SceneRenderer::DoesIntersect(const Vec3f &origin, const Vec3f &distance,
                                    const Face &face) {
-  const Vec3f distance = s - e;
   const Vec3f vertex_0 = scene_.vertex_data[face.v0_id];
   const Vec3f vertex_1 = scene_.vertex_data[face.v1_id];
   const Vec3f vertex_2 = scene_.vertex_data[face.v2_id];
-  const Vec3f vertex_to_camera = e - vertex_0;
+  const Vec3f vertex_to_camera = origin - vertex_0;
   const float t = -(vertex_to_camera * face.normal) / (distance * face.normal);
-  const Vec3f point = e + (s - e) * t;
+  const Vec3f point = origin + distance * t;
   if (SameSide(point, vertex_0, vertex_1, vertex_2) &&
       SameSide(point, vertex_1, vertex_0, vertex_2) &&
       SameSide(point, vertex_2, vertex_0, vertex_1)) {
@@ -31,11 +30,11 @@ float SceneRenderer::DoesIntersect(const Vec3f &e, const Vec3f &s,
   return std::numeric_limits<float>::infinity();
 }
 
-float SceneRenderer::DoesIntersect(const Vec3f &e, const Vec3f &s,
+float SceneRenderer::DoesIntersect(const Vec3f &origin, const Vec3f &distance,
                                    const Mesh &mesh, Face &intersecting_face) {
   float tmin = std::numeric_limits<float>::infinity();
   for (const Face &face : mesh.faces) {
-    const float t = DoesIntersect(e, s, face);
+    const float t = DoesIntersect(origin, distance, face);
     if (t < tmin) {
       tmin = t;
       intersecting_face = face;
@@ -44,16 +43,15 @@ float SceneRenderer::DoesIntersect(const Vec3f &e, const Vec3f &s,
   return tmin;
 }
 
-float SceneRenderer::DoesIntersect(const Vec3f &e, const Vec3f &s,
+float SceneRenderer::DoesIntersect(const Vec3f &origin, const Vec3f &distance,
                                    const Triangle &triangle) {
-  return DoesIntersect(e, s, triangle.indices);
+  return DoesIntersect(origin, distance, triangle.indices);
 }
 
-float SceneRenderer::DoesIntersect(const Vec3f &e, const Vec3f &s,
+float SceneRenderer::DoesIntersect(const Vec3f &origin, const Vec3f &distance,
                                    const Sphere &sphere) {
-  const Vec3f distance = s - e;
   const Vec3f center_of_sphere = scene_.vertex_data[sphere.center_vertex_id];
-  const Vec3f sphere_to_camera = e - center_of_sphere;
+  const Vec3f sphere_to_camera = origin - center_of_sphere;
   const float distance_times_sphere_to_camera = distance * sphere_to_camera;
   const float norm_of_distance_squared = distance * distance;
   const float norm_of_sphere_to_camera_squared =
@@ -103,11 +101,11 @@ Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera &camera) {
   int material_id = -1;
   Vec3f normal;
   float tmin = std::numeric_limits<float>::infinity();
-  const Vec3f e = camera.position;
-  const Vec3f s = CalculateS(i, j, camera);
+  const Vec3f origin = camera.position;
+  const Vec3f distance = CalculateS(i, j, camera) - origin;
 
   for (const Triangle &obj : scene_.triangles) {
-    float t = DoesIntersect(e, s, obj);
+    float t = DoesIntersect(origin, distance, obj);
     if (t < tmin && t > 0.0f) {
       tmin = t;
       material_id = obj.material_id;
@@ -115,17 +113,17 @@ Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera &camera) {
     }
   }
   for (const Sphere &obj : scene_.spheres) {
-    float t = DoesIntersect(e, s, obj);
+    float t = DoesIntersect(origin, distance, obj);
     if (t < tmin && t > 0.0f) {
       tmin = t;
       material_id = obj.material_id;
-      normal = (s - e) * t - scene_.vertex_data[obj.center_vertex_id];
+      normal = distance * t - scene_.vertex_data[obj.center_vertex_id];
       normal /= obj.radius;
     }
   }
   parser::Face face;
   for (const Mesh &obj : scene_.meshes) {
-    float t = DoesIntersect(e, s, obj, face);
+    float t = DoesIntersect(origin, distance, obj, face);
     if (t < tmin && t > 0.0f) {
       tmin = t;
       material_id = obj.material_id;
@@ -137,8 +135,8 @@ Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera &camera) {
     const Material material = scene_.materials[material_id];
     color = scene_.ambient_light.PointWise(material.ambient);
 
-    const Vec3f intersection_point = e + (s - e) * tmin;
-    Vec3f w0 = e - intersection_point;
+    const Vec3f intersection_point = origin + distance * tmin;
+    Vec3f w0 = origin - intersection_point;
     //TODO: should w0 be normalized?   
     //In slides 3 w0 is the unit vector from s to e
     //Check this @kadircet
@@ -151,10 +149,11 @@ Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera &camera) {
       //Shadow check  
       float tmin_shadow = std::numeric_limits<float>::infinity();
       bool shadow_exists = false;
+      Vec3f wi = light.position - intersection_point; 
       const Vec3f intersection_point_with_epsilon = intersection_point + 
-          (light.position - intersection_point) * scene_.shadow_ray_epsilon; 
+          (wi * scene_.shadow_ray_epsilon);
       for (const Triangle &obj : scene_.triangles) {
-        float t = DoesIntersect(intersection_point, light.position, obj);
+        float t = DoesIntersect(intersection_point_with_epsilon, wi, obj);
         if (t < tmin && t > 0.0f) {
           shadow_exists = true;
           break;
@@ -164,7 +163,7 @@ Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera &camera) {
         continue;
       }
       for (const Sphere &obj : scene_.spheres) {
-        float t = DoesIntersect(intersection_point, light.position, obj);
+        float t = DoesIntersect(intersection_point_with_epsilon, wi, obj);
         if (t < tmin && t > 0.0f) {
           shadow_exists = true;
           break;
@@ -175,7 +174,7 @@ Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera &camera) {
       }
       parser::Face face;
       for (const Mesh &obj : scene_.meshes) {
-        float t = DoesIntersect(intersection_point, light.position, obj, face);
+        float t = DoesIntersect(intersection_point_with_epsilon, wi, obj, face);
         if (t < tmin && t > 0.0f) {
           shadow_exists = true;
           break;
@@ -186,8 +185,6 @@ Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera &camera) {
       }
       // 
 
-
-      Vec3f wi = (light.position - intersection_point);
       const float r_square = wi * wi;
       wi.Normalize();
 
