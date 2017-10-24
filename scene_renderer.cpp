@@ -147,15 +147,17 @@ Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera &camera) {
     for (const PointLight &light : scene_.point_lights) {
       
       //Shadow check  
-      float tmin_shadow = 1.0f; 
+      float tmin_shadow = 1.0f-scene_.shadow_ray_epsilon; 
       bool shadow_exists = false;
       Vec3f wi = light.position - intersection_point; 
       const Vec3f intersection_point_with_epsilon = intersection_point + 
           (wi * scene_.shadow_ray_epsilon);
       for (const Triangle &obj : scene_.triangles) {
         float t = DoesIntersect(intersection_point_with_epsilon, wi, obj);
+        std::cout<<t<<std::endl;
         if (t < tmin_shadow && t > 0.0f) {
           shadow_exists = true;
+          std::cout << "hit tri" << i << " " << j << std::endl;
           break;
         }
       }
@@ -164,7 +166,9 @@ Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera &camera) {
       }
       for (const Sphere &obj : scene_.spheres) {
         float t = DoesIntersect(intersection_point_with_epsilon, wi, obj);
+        std::cout<<t<<std::endl;
         if (t < tmin_shadow && t > 0.0f) {
+          std::cout << "hit sphere" << i << " " << j << std::endl;
           shadow_exists = true;
           break;
         }
@@ -175,7 +179,9 @@ Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera &camera) {
       parser::Face face;
       for (const Mesh &obj : scene_.meshes) {
         float t = DoesIntersect(intersection_point_with_epsilon, wi, obj, face);
+        std::cout<<t<<std::endl;
         if (t < tmin_shadow && t > 0.0f) {
+          std::cout << "hit mesh" << i << " " << j << std::endl;
           shadow_exists = true;
           break;
         }
