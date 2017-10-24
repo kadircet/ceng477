@@ -31,11 +31,11 @@ float SceneRenderer::DoesIntersect(const Vec3f &origin, const Vec3f &distance,
 }
 
 float SceneRenderer::DoesIntersect(const Vec3f &origin, const Vec3f &distance,
-                                   const Mesh &mesh, Face &intersecting_face) {
-  float tmin = std::numeric_limits<float>::infinity();
+                                   const Mesh &mesh, Face &intersecting_face,
+                                   float tmin) {
   for (const Face &face : mesh.faces) {
     const float t = DoesIntersect(origin, distance, face);
-    if (t < tmin) {
+    if (t < tmin && t > 0.0f) {
       tmin = t;
       intersecting_face = face;
     }
@@ -123,7 +123,7 @@ Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera &camera) {
   }
   parser::Face face;
   for (const Mesh &obj : scene_.meshes) {
-    float t = DoesIntersect(origin, distance, obj, face);
+    float t = DoesIntersect(origin, distance, obj, face, tmin);
     if (t < tmin && t > 0.0f) {
       tmin = t;
       material_id = obj.material_id;
@@ -154,10 +154,8 @@ Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera &camera) {
           (wi * scene_.shadow_ray_epsilon);
       for (const Triangle &obj : scene_.triangles) {
         float t = DoesIntersect(intersection_point_with_epsilon, wi, obj);
-        std::cout<<t<<std::endl;
         if (t < tmin_shadow && t > 0.0f) {
           shadow_exists = true;
-          std::cout << "hit tri" << i << " " << j << std::endl;
           break;
         }
       }
@@ -166,9 +164,7 @@ Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera &camera) {
       }
       for (const Sphere &obj : scene_.spheres) {
         float t = DoesIntersect(intersection_point_with_epsilon, wi, obj);
-        std::cout<<t<<std::endl;
         if (t < tmin_shadow && t > 0.0f) {
-          std::cout << "hit sphere" << i << " " << j << std::endl;
           shadow_exists = true;
           break;
         }
@@ -178,10 +174,8 @@ Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera &camera) {
       }
       parser::Face face;
       for (const Mesh &obj : scene_.meshes) {
-        float t = DoesIntersect(intersection_point_with_epsilon, wi, obj, face);
-        std::cout<<t<<std::endl;
+        float t = DoesIntersect(intersection_point_with_epsilon, wi, obj, face, tmin_shadow);
         if (t < tmin_shadow && t > 0.0f) {
-          std::cout << "hit mesh" << i << " " << j << std::endl;
           shadow_exists = true;
           break;
         }
