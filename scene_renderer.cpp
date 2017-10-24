@@ -147,7 +147,7 @@ Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera &camera) {
     for (const PointLight &light : scene_.point_lights) {
       
       //Shadow check  
-      float tmin_shadow = std::numeric_limits<float>::infinity();
+      float tmin_shadow = 1.0f; 
       bool shadow_exists = false;
       Vec3f wi = light.position - intersection_point; 
       const Vec3f intersection_point_with_epsilon = intersection_point + 
