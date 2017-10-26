@@ -141,7 +141,7 @@ struct Face {
     const Vec3f v0 = vertex_data[v0_id];
     const Vec3f e1 = vertex_data[v1_id] - v0;
     const Vec3f e2 = vertex_data[v2_id] - v0;
-    normal = e2.CrossProduct(e1);
+    normal = e1.CrossProduct(e2);
     normal.Normalize();
   }
 };
