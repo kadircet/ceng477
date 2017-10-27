@@ -32,22 +32,22 @@ struct Vec3f {
     this->z = z;
   }
 
-  Vec3f(const Vec3i &rhs) {
+  Vec3f(const Vec3i rhs) {
     this->x = rhs.x;
     this->y = rhs.y;
     this->z = rhs.z;
   }
 
-  Vec3f operator+(const Vec3f &rhs) const {
+  Vec3f operator+(const Vec3f rhs) const {
     return Vec3f(x + rhs.x, y + rhs.y, z + rhs.z);
   }
 
-  Vec3f operator-(const Vec3f &rhs) const {
+  Vec3f operator-(const Vec3f rhs) const {
     return Vec3f(x - rhs.x, y - rhs.y, z - rhs.z);
   }
 
   // Dot product.
-  float operator*(const Vec3f &rhs) const {
+  float operator*(const Vec3f rhs) const {
     return x * rhs.x + y * rhs.y + z * rhs.z;
   }
 
@@ -72,19 +72,19 @@ struct Vec3f {
     return *this;
   }
 
-  Vec3f &operator+=(const Vec3f &rhs) {
+  Vec3f &operator+=(const Vec3f rhs) {
     x += rhs.x;
     y += rhs.y;
     z += rhs.z;
     return *this;
   }
 
-  Vec3f CrossProduct(const Vec3f &rhs) const {
+  Vec3f CrossProduct(const Vec3f rhs) const {
     return Vec3f(y * rhs.z - z * rhs.y, z * rhs.x - x * rhs.z,
                  x * rhs.y - y * rhs.x);
   }
 
-  Vec3f PointWise(const Vec3f &rhs) const {
+  Vec3f PointWise(const Vec3f rhs) const {
     return Vec3f(x * rhs.x, y * rhs.y, z * rhs.z);
   }
 

@@ -1,4 +1,5 @@
 #include "scene_renderer.h"
+#include <cassert>
 #include <cmath>
 #include <iostream>
 #include <limits>
@@ -13,7 +14,7 @@ bool SameSide(const Vec3f &point, const Vec3f &vertex_c, const Vec3f &vertex_a,
   const Vec3f vec_ba = vertex_b - vertex_a;
   const Vec3f vec_pa = point - vertex_a;
   const Vec3f vec_ca = vertex_c - vertex_a;
-  return (vec_ba.CrossProduct(vec_pa)) * (vec_ba.CrossProduct(vec_ca)) >= .0;
+  return (vec_ba.CrossProduct(vec_pa)) * (vec_ba.CrossProduct(vec_ca)) > .0;
 }
 
 bool NotZero(const Vec3f vec) { return vec.x != 0 || vec.y != 0 || vec.z != 0; }
@@ -70,22 +71,20 @@ float SceneRenderer::DoesIntersect(const Vec3f &origin, const Vec3f &direction,
   const Vec3f center_of_sphere = scene_.vertex_data[sphere.center_vertex_id];
   const Vec3f sphere_to_camera = origin - center_of_sphere;
   const float direction_times_sphere_to_camera = direction * sphere_to_camera;
-  const float norm_of_direction_squared = direction * direction;
   const float norm_of_sphere_to_camera_squared =
       sphere_to_camera * sphere_to_camera;
   const float radius_squared = sphere.radius * sphere.radius;
   const float determinant =
       direction_times_sphere_to_camera * direction_times_sphere_to_camera -
-      norm_of_direction_squared *
-          (norm_of_sphere_to_camera_squared - radius_squared);
+      (norm_of_sphere_to_camera_squared - radius_squared);
   if (determinant < -kEpsilon) {
     return std::numeric_limits<float>::infinity();
-  } else if (fabs(determinant) <= kEpsilon) {
-    return -direction_times_sphere_to_camera / norm_of_direction_squared;
+  } else if (determinant < kEpsilon) {
+    return -direction_times_sphere_to_camera;
   } else {
     const float t1 = (-direction_times_sphere_to_camera + sqrt(determinant));
     const float t2 = (-direction_times_sphere_to_camera - sqrt(determinant));
-    return fmin(t1, t2) / norm_of_direction_squared;
+    return fmin(t1, t2);
   }
 }
 
@@ -103,7 +102,7 @@ HitRecord SceneRenderer::GetIntersection(const Ray &ray) {
 
   for (const Triangle &obj : scene_.triangles) {
     const float t = DoesIntersect(origin, direction, obj);
-    if (t < tmin) {
+    if (t < tmin && t > .0) {
       tmin = t;
       material_id = obj.material_id;
       normal = obj.indices.normal;
@@ -121,7 +120,7 @@ HitRecord SceneRenderer::GetIntersection(const Ray &ray) {
   for (const Mesh &obj : scene_.meshes) {
     parser::Face face;
     const float t = DoesIntersect(origin, direction, obj, face);
-    if (t < tmin && t > scene_.shadow_ray_epsilon) {
+    if (t < tmin && t > .0) {
       tmin = t;
       material_id = obj.material_id;
       normal = face.normal;
@@ -149,7 +148,7 @@ bool SceneRenderer::DoesIntersect(const Ray &ray, float tmax) {
   }
   for (const Mesh &obj : scene_.meshes) {
     const float t = DoesIntersect(origin, direction, obj, tmax);
-    if (t < tmax && t > 0.0f) {
+    if (t < tmax + kEpsilon && t > 0.0f) {
       return true;
     }
   }
@@ -157,29 +156,29 @@ bool SceneRenderer::DoesIntersect(const Ray &ray, float tmax) {
 }
 
 Vec3f SceneRenderer::TraceRay(const Ray &ray, int depth) {
+  assert(fabs(1 - ray.direction * ray.direction) < kEpsilon);
   Vec3f color = scene_.background_color;
   const HitRecord hit_record = GetIntersection(ray);
   const int material_id = hit_record.material_id;
 
   if (material_id != -1) {
-    const Material material = scene_.materials[material_id];
-    color = scene_.ambient_light.PointWise(material.ambient);
-
     const Vec3f origin = ray.origin;
     const Vec3f intersection_point = origin + ray.direction * hit_record.t;
-    const Vec3f w0 = (origin - intersection_point).Normalized();
     const Vec3f normal = hit_record.normal;
+    const Material material = scene_.materials[material_id];
+
     for (const PointLight &light : scene_.point_lights) {
       // Shadow check
-      const float tmax = 1.0f - scene_.shadow_ray_epsilon;
       const Vec3f wi = light.position - intersection_point;
       const Vec3f wi_normal = wi.Normalized();
+      const float tmax = (1.0f - scene_.shadow_ray_epsilon) * wi.Length();
       const Vec3f intersection_point_with_epsilon =
           intersection_point + (wi_normal * scene_.shadow_ray_epsilon);
-      const Ray shadow_ray{intersection_point_with_epsilon, wi};
+      const Ray shadow_ray{intersection_point_with_epsilon, wi_normal};
       if (DoesIntersect(shadow_ray, tmax)) {
         continue;
       }
+      color = scene_.ambient_light.PointWise(material.ambient);
 
       const float r_square = wi * wi;
       const Vec3f intensity = light.intensity / r_square;
@@ -188,17 +187,23 @@ Vec3f SceneRenderer::TraceRay(const Ray &ray, int depth) {
       const float cos_theta = wi_normal * normal;
       const float cos_thetap = cos_theta > 0. ? cos_theta : 0.;
       color += (material.diffuse * cos_thetap).PointWise(intensity);
+      std::cout << cos_theta << std::endl;
+      color.Print();
 
       // Specular light
-      const Vec3f h = (wi_normal + w0).Normalized();
+      const Vec3f h = (wi_normal - ray.direction).Normalized();
       const float cos_alpha = normal * h;
       const float cos_alphap = cos_alpha > 0. ? cos_alpha : 0.;
       color += (material.specular * pow(cos_alphap, material.phong_exponent))
                    .PointWise(intensity);
+      std::cout << cos_alpha << std::endl;
+      color.Print();
+      std::cout << "--------" << std::endl;
     }
     // Specular reflection
     if (depth > 0 && NotZero(material.mirror)) {
-      const Vec3f wi = (w0 + normal * -2 * (w0 * normal)).Normalized() * -1;
+      const Vec3f wi =
+          (ray.direction + normal * -2 * (ray.direction * normal)).Normalized();
       const Vec3f intersection_point_with_epsilon =
           intersection_point + (wi * scene_.shadow_ray_epsilon);
       const Ray reflection_ray{intersection_point_with_epsilon, wi};
@@ -209,8 +214,6 @@ Vec3f SceneRenderer::TraceRay(const Ray &ray, int depth) {
 }
 
 Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera &camera) {
-  // TODO(kadircet): Should we clamp at each step, or only at the final
-  // stage?
   const Vec3f origin = camera.position;
   const Vec3f direction = (CalculateS(i, j) - origin).Normalized();
   const Ray ray{origin, direction};
@@ -233,11 +236,8 @@ Vec3i *SceneRenderer::RenderImage(const Camera &camera) {
 
   const Vec3f m = camera.position + gaze * dist;
   q = m + u * l + v * t;
-
-  const float su = (r - l) / camera.image_width;
-  const float sv = (t - b) / camera.image_height;
-  usu = u * su;
-  vsv = v * sv;
+  usu = u * (r - l) / camera.image_width;
+  vsv = v * (t - b) / camera.image_height;
 
   for (int j = 0; j < height; j++) {
     for (int i = 0; i < width; i++) {
