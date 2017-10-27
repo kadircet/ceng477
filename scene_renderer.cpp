@@ -21,7 +21,7 @@ bool NotZero(const Vec3f vec) { return vec.x != 0 || vec.y != 0 || vec.z != 0; }
 
 } // namespace
 
-float Determinant(Vec3f a, Vec3f b, Vec3f c)
+inline float Determinant(Vec3f a, Vec3f b, Vec3f c)
 {
     //vectors are columns
     return a.x * (b.y * c.z - c.y * b.z)
