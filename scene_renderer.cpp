@@ -21,12 +21,20 @@ bool NotZero(const Vec3f vec) { return vec.x != 0 || vec.y != 0 || vec.z != 0; }
 
 } // namespace
 
+float Determinant(Vec3f a, Vec3f b, Vec3f c)
+{
+    //vectors are columns
+    return a.x * (b.y * c.z - c.y * b.z)
+         + a.y * (c.x * b.z - b.x * c.z)
+         + a.z * (b.x * c.y - c.x * b.y);
+}
+
 float SceneRenderer::DoesIntersect(const Vec3f &origin, const Vec3f &direction,
                                    const Face &face) {
   const Vec3f vertex_0 = scene_.vertex_data[face.v0_id];
   const Vec3f vertex_1 = scene_.vertex_data[face.v1_id];
   const Vec3f vertex_2 = scene_.vertex_data[face.v2_id];
-  const Vec3f vertex_to_camera = origin - vertex_0;
+  /*const Vec3f vertex_to_camera = origin - vertex_0;
   const float t = -(vertex_to_camera * face.normal) / (direction * face.normal);
   const Vec3f point = origin + direction * t;
   if (SameSide(point, vertex_0, vertex_1, vertex_2) &&
@@ -34,7 +42,31 @@ float SceneRenderer::DoesIntersect(const Vec3f &origin, const Vec3f &direction,
       SameSide(point, vertex_2, vertex_0, vertex_1)) {
     return t;
   }
-  return std::numeric_limits<float>::infinity();
+  return std::numeric_limits<float>::infinity();*/
+  // a->v0 b->v1 c->v2
+  const Vec3f ba = vertex_0 - vertex_1;
+  const Vec3f ca = vertex_0 - vertex_2;
+  const float detA = Determinant(ba,ca,direction);
+  const Vec3f oa = (vertex_0 - origin) / detA;
+  const float beta = Determinant(oa,ca,direction);
+  if(beta<.0f)
+  {
+    return std::numeric_limits<float>::infinity();
+  }
+  const float gama = Determinant(ba,oa,direction);
+  if(gama<.0f || beta+gama>1.0f)
+  {
+    return std::numeric_limits<float>::infinity();
+  }
+  const float t = Determinant(ba,ca,oa); 
+  if(t>=0 && t<=std::numeric_limits<float>::infinity())
+  {
+      return t;
+  } 
+  else
+  {
+      return std::numeric_limits<float>::infinity();
+  }
 }
 
 float SceneRenderer::DoesIntersect(const Vec3f &origin, const Vec3f &direction,
