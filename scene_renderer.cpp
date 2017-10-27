@@ -4,7 +4,7 @@
 #include <limits>
 using namespace parser;
 
-constexpr const float kEpsilon = 1e-8;
+constexpr const float kEpsilon = 1e-6;
 
 namespace {
 
@@ -15,6 +15,9 @@ bool SameSide(const Vec3f &point, const Vec3f &vertex_c, const Vec3f &vertex_a,
   const Vec3f vec_ca = vertex_c - vertex_a;
   return (vec_ba.CrossProduct(vec_pa)) * (vec_ba.CrossProduct(vec_ca)) >= .0;
 }
+
+bool NotZero(const Vec3f vec) { return vec.x != 0 || vec.y != 0 || vec.z != 0; }
+
 } // namespace
 
 float SceneRenderer::DoesIntersect(const Vec3f &origin, const Vec3f &direction,
@@ -75,16 +78,14 @@ float SceneRenderer::DoesIntersect(const Vec3f &origin, const Vec3f &direction,
       direction_times_sphere_to_camera * direction_times_sphere_to_camera -
       norm_of_direction_squared *
           (norm_of_sphere_to_camera_squared - radius_squared);
-  if (determinant < kEpsilon) {
+  if (determinant < -kEpsilon) {
     return std::numeric_limits<float>::infinity();
   } else if (fabs(determinant) <= kEpsilon) {
     return -direction_times_sphere_to_camera / norm_of_direction_squared;
   } else {
-    const float t1 = (-direction_times_sphere_to_camera + sqrt(determinant)) /
-                     norm_of_direction_squared;
-    const float t2 = (-direction_times_sphere_to_camera - sqrt(determinant)) /
-                     norm_of_direction_squared;
-    return fmin(t1, t2);
+    const float t1 = (-direction_times_sphere_to_camera + sqrt(determinant));
+    const float t2 = (-direction_times_sphere_to_camera - sqrt(determinant));
+    return fmin(t1, t2) / norm_of_direction_squared;
   }
 }
 
@@ -196,7 +197,7 @@ Vec3f SceneRenderer::TraceRay(const Ray &ray, int depth) {
                    .PointWise(intensity);
     }
     // Specular reflection
-    if (depth > 0) {
+    if (depth > 0 && NotZero(material.mirror)) {
       const Vec3f wi = (w0 + normal * -2 * (w0 * normal)).Normalized() * -1;
       const Vec3f intersection_point_with_epsilon =
           intersection_point + (wi * scene_.shadow_ray_epsilon);
@@ -211,7 +212,7 @@ Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera &camera) {
   // TODO(kadircet): Should we clamp at each step, or only at the final
   // stage?
   const Vec3f origin = camera.position;
-  const Vec3f direction = CalculateS(i, j) - origin;
+  const Vec3f direction = (CalculateS(i, j) - origin).Normalized();
   const Ray ray{origin, direction};
   return SceneRenderer::TraceRay(ray, scene_.max_recursion_depth).ToVec3i();
 }
