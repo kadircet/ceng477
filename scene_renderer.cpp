@@ -173,9 +173,10 @@ Vec3f SceneRenderer::TraceRay(const Ray &ray, int depth) {
       // Shadow check
       const Vec3f wi = light.position - intersection_point;
       const Vec3f wi_normal = wi.Normalized();
-      const float tmax = (1.0f - scene_.shadow_ray_epsilon) * wi.Length();
+      //TODO: be sure if epsilon calculate is right
+      const float tmax = (wi.Length() - scene_.shadow_ray_epsilon);
       const Vec3f intersection_point_with_epsilon =
-          intersection_point + (wi * scene_.shadow_ray_epsilon);
+          intersection_point + (wi_normal * scene_.shadow_ray_epsilon);
       const Ray shadow_ray{intersection_point_with_epsilon, wi_normal};
       if (DoesIntersect(shadow_ray, tmax)) {
         continue;
