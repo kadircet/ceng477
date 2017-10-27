@@ -14,7 +14,7 @@ bool SameSide(const Vec3f &point, const Vec3f &vertex_c, const Vec3f &vertex_a,
   const Vec3f vec_ba = vertex_b - vertex_a;
   const Vec3f vec_pa = point - vertex_a;
   const Vec3f vec_ca = vertex_c - vertex_a;
-  return (vec_ba.CrossProduct(vec_pa)) * (vec_ba.CrossProduct(vec_ca)) > .0;
+  return (vec_ba.CrossProduct(vec_pa)) * (vec_ba.CrossProduct(vec_ca)) >= .0;
 }
 
 bool NotZero(const Vec3f vec) { return vec.x != 0 || vec.y != 0 || vec.z != 0; }
@@ -175,7 +175,7 @@ Vec3f SceneRenderer::TraceRay(const Ray &ray, int depth) {
       const Vec3f wi_normal = wi.Normalized();
       const float tmax = (1.0f - scene_.shadow_ray_epsilon) * wi.Length();
       const Vec3f intersection_point_with_epsilon =
-          intersection_point + (wi_normal * scene_.shadow_ray_epsilon);
+          intersection_point + (wi * scene_.shadow_ray_epsilon);
       const Ray shadow_ray{intersection_point_with_epsilon, wi_normal};
       if (DoesIntersect(shadow_ray, tmax)) {
         continue;
