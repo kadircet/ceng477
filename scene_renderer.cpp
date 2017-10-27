@@ -137,13 +137,13 @@ bool SceneRenderer::DoesIntersect(const Ray &ray, float tmax) {
 
   for (const Triangle &obj : scene_.triangles) {
     const float t = DoesIntersect(origin, direction, obj);
-    if (t < tmax && t > 0.0f) {
+    if (t < tmax + kEpsilon && t > 0.0f) {
       return true;
     }
   }
   for (const Sphere &obj : scene_.spheres) {
     const float t = DoesIntersect(origin, direction, obj);
-    if (t < tmax && t > 0.0f) {
+    if (t < tmax + kEpsilon && t > 0.0f) {
       return true;
     }
   }
