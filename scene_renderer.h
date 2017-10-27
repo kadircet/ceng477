@@ -35,7 +35,7 @@ private:
   HitRecord GetIntersection(const Ray &ray);
   bool DoesIntersect(const Ray &ray, float tmax);
 
-  parser::Vec3f TraceRay(const Ray &ray);
+  parser::Vec3f TraceRay(const Ray &ray, int depth);
   parser::Vec3f CalculateS(int i, int j);
   parser::Vec3i RenderPixel(int i, int j, const parser::Camera &camera);
 
