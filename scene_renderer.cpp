@@ -113,8 +113,9 @@ HitRecord SceneRenderer::GetIntersection(const Ray &ray) {
     if (t < tmin && t > .0) {
       tmin = t;
       material_id = obj.material_id;
-      normal = (direction * t + origin - scene_.vertex_data[obj.center_vertex_id])
-                   .Normalized();
+      normal =
+          (direction * t + origin - scene_.vertex_data[obj.center_vertex_id])
+              .Normalized();
     }
   }
   for (const Mesh &obj : scene_.meshes) {
@@ -166,6 +167,7 @@ Vec3f SceneRenderer::TraceRay(const Ray &ray, int depth) {
     const Vec3f intersection_point = origin + ray.direction * hit_record.t;
     const Vec3f normal = hit_record.normal;
     const Material material = scene_.materials[material_id];
+    color = scene_.ambient_light.PointWise(material.ambient);
 
     for (const PointLight &light : scene_.point_lights) {
       // Shadow check
@@ -178,7 +180,6 @@ Vec3f SceneRenderer::TraceRay(const Ray &ray, int depth) {
       if (DoesIntersect(shadow_ray, tmax)) {
         continue;
       }
-      color = scene_.ambient_light.PointWise(material.ambient);
 
       const float r_square = wi * wi;
       const Vec3f intensity = light.intensity / r_square;
@@ -187,8 +188,6 @@ Vec3f SceneRenderer::TraceRay(const Ray &ray, int depth) {
       const float cos_theta = wi_normal * normal;
       const float cos_thetap = cos_theta > 0. ? cos_theta : 0.;
       color += (material.diffuse * cos_thetap).PointWise(intensity);
-      std::cout << cos_theta << std::endl;
-      color.Print();
 
       // Specular light
       const Vec3f h = (wi_normal - ray.direction).Normalized();
@@ -196,9 +195,6 @@ Vec3f SceneRenderer::TraceRay(const Ray &ray, int depth) {
       const float cos_alphap = cos_alpha > 0. ? cos_alpha : 0.;
       color += (material.specular * pow(cos_alphap, material.phong_exponent))
                    .PointWise(intensity);
-      std::cout << cos_alpha << std::endl;
-      color.Print();
-      std::cout << "--------" << std::endl;
     }
     // Specular reflection
     if (depth > 0 && NotZero(material.mirror)) {
