@@ -113,7 +113,7 @@ HitRecord SceneRenderer::GetIntersection(const Ray &ray) {
     if (t < tmin && t > .0) {
       tmin = t;
       material_id = obj.material_id;
-      normal = (direction * t - scene_.vertex_data[obj.center_vertex_id])
+      normal = (direction * t + origin - scene_.vertex_data[obj.center_vertex_id])
                    .Normalized();
     }
   }
