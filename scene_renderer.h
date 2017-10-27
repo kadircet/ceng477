@@ -22,7 +22,8 @@ private:
   float DoesIntersect(const parser::Vec3f &origin,
                       const parser::Vec3f &direction, const parser::Face &face);
   float DoesIntersect(const parser::Vec3f &origin,
-                      const parser::Vec3f &direction, const parser::Mesh &mesh);
+                      const parser::Vec3f &direction, const parser::Mesh &mesh,
+                      float tmax);
   float DoesIntersect(const parser::Vec3f &origin,
                       const parser::Vec3f &direction, const parser::Mesh &mesh,
                       parser::Face &intersecting_face);

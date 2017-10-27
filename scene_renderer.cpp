@@ -34,10 +34,10 @@ float SceneRenderer::DoesIntersect(const Vec3f &origin, const Vec3f &direction,
 }
 
 float SceneRenderer::DoesIntersect(const Vec3f &origin, const Vec3f &direction,
-                                   const Mesh &mesh) {
+                                   const Mesh &mesh, float tmax) {
   for (const Face &face : mesh.faces) {
     const float t = DoesIntersect(origin, direction, face);
-    if (t > .0) {
+    if (t < tmax && t > .0) {
       return t;
     }
   }
@@ -117,8 +117,8 @@ HitRecord SceneRenderer::GetIntersection(const Ray &ray) {
       normal /= obj.radius;
     }
   }
-  parser::Face face;
   for (const Mesh &obj : scene_.meshes) {
+    parser::Face face;
     const float t = DoesIntersect(origin, direction, obj, face);
     if (t < tmin && t > 0.0f) {
       tmin = t;
@@ -147,7 +147,7 @@ bool SceneRenderer::DoesIntersect(const Ray &ray, float tmax) {
     }
   }
   for (const Mesh &obj : scene_.meshes) {
-    const float t = DoesIntersect(origin, direction, obj);
+    const float t = DoesIntersect(origin, direction, obj, tmax);
     if (t < tmax && t > 0.0f) {
       return true;
     }
