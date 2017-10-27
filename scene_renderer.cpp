@@ -102,7 +102,7 @@ HitRecord SceneRenderer::GetIntersection(const Ray &ray) {
 
   for (const Triangle &obj : scene_.triangles) {
     const float t = DoesIntersect(origin, direction, obj);
-    if (t < tmin && t > 0.0f) {
+    if (t < tmin) {
       tmin = t;
       material_id = obj.material_id;
       normal = obj.indices.normal;
@@ -110,17 +110,17 @@ HitRecord SceneRenderer::GetIntersection(const Ray &ray) {
   }
   for (const Sphere &obj : scene_.spheres) {
     const float t = DoesIntersect(origin, direction, obj);
-    if (t < tmin && t > 0.0f) {
+    if (t < tmin && t > .0) {
       tmin = t;
       material_id = obj.material_id;
-      normal = direction * t - scene_.vertex_data[obj.center_vertex_id];
-      normal /= obj.radius;
+      normal = (direction * t - scene_.vertex_data[obj.center_vertex_id])
+                   .Normalized();
     }
   }
   for (const Mesh &obj : scene_.meshes) {
     parser::Face face;
     const float t = DoesIntersect(origin, direction, obj, face);
-    if (t < tmin && t > 0.0f) {
+    if (t < tmin && t > scene_.shadow_ray_epsilon) {
       tmin = t;
       material_id = obj.material_id;
       normal = face.normal;
@@ -155,10 +155,10 @@ bool SceneRenderer::DoesIntersect(const Ray &ray, float tmax) {
   return false;
 }
 
-Vec3f SceneRenderer::TraceRay(const Ray &ray) {
+Vec3f SceneRenderer::TraceRay(const Ray &ray, int depth) {
+  Vec3f color = scene_.background_color;
   const HitRecord hit_record = GetIntersection(ray);
   const int material_id = hit_record.material_id;
-  Vec3f color = scene_.background_color;
 
   if (material_id != -1) {
     const Material material = scene_.materials[material_id];
@@ -166,33 +166,42 @@ Vec3f SceneRenderer::TraceRay(const Ray &ray) {
 
     const Vec3f origin = ray.origin;
     const Vec3f intersection_point = origin + ray.direction * hit_record.t;
-    Vec3f w0 = origin - intersection_point;
-    w0.Normalize();
+    const Vec3f w0 = (origin - intersection_point).Normalized();
+    const Vec3f normal = hit_record.normal;
     for (const PointLight &light : scene_.point_lights) {
+      // Shadow check
       const float tmax = 1.0f - scene_.shadow_ray_epsilon;
-      Vec3f wi = light.position - intersection_point;
+      const Vec3f wi = light.position - intersection_point;
+      const Vec3f wi_normal = wi.Normalized();
       const Vec3f intersection_point_with_epsilon =
-          intersection_point + (wi * scene_.shadow_ray_epsilon);
+          intersection_point + (wi_normal * scene_.shadow_ray_epsilon);
       const Ray shadow_ray{intersection_point_with_epsilon, wi};
       if (DoesIntersect(shadow_ray, tmax)) {
         continue;
       }
+
       const float r_square = wi * wi;
-      wi.Normalize();
-
-      Vec3f h = wi + w0;
-      h.Normalize();
-
       const Vec3f intensity = light.intensity / r_square;
-      const Vec3f normal = hit_record.normal;
-      const float cos_theta = wi * normal;
+
+      // Diffuse light
+      const float cos_theta = wi_normal * normal;
       const float cos_thetap = cos_theta > 0. ? cos_theta : 0.;
       color += (material.diffuse * cos_thetap).PointWise(intensity);
 
+      // Specular light
+      const Vec3f h = (wi_normal + w0).Normalized();
       const float cos_alpha = normal * h;
       const float cos_alphap = cos_alpha > 0. ? cos_alpha : 0.;
       color += (material.specular * pow(cos_alphap, material.phong_exponent))
                    .PointWise(intensity);
+    }
+    // Specular reflection
+    if (depth > 0) {
+      const Vec3f wi = (w0 + normal * -2 * (w0 * normal)).Normalized() * -1;
+      const Vec3f intersection_point_with_epsilon =
+          intersection_point + (wi * scene_.shadow_ray_epsilon);
+      const Ray reflection_ray{intersection_point_with_epsilon, wi};
+      color += TraceRay(reflection_ray, depth - 1).PointWise(material.mirror);
     }
   }
   return color;
@@ -204,7 +213,7 @@ Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera &camera) {
   const Vec3f origin = camera.position;
   const Vec3f direction = CalculateS(i, j) - origin;
   const Ray ray{origin, direction};
-  return SceneRenderer::TraceRay(ray).ToVec3i();
+  return SceneRenderer::TraceRay(ray, scene_.max_recursion_depth).ToVec3i();
 }
 
 Vec3i *SceneRenderer::RenderImage(const Camera &camera) {

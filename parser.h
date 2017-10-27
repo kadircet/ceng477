@@ -51,23 +51,21 @@ struct Vec3f {
     return x * rhs.x + y * rhs.y + z * rhs.z;
   }
 
-  Vec3f operator*(const float &rhs) const {
-    return Vec3f(x * rhs, y * rhs, z * rhs);
-  }
+  Vec3f operator*(float rhs) const { return Vec3f(x * rhs, y * rhs, z * rhs); }
 
-  Vec3f operator/(const float &rhs) const {
+  Vec3f operator/(float rhs) const {
     Vec3f result(x / rhs, y / rhs, z / rhs);
     return result;
   }
 
-  Vec3f &operator/=(const float &rhs) {
+  Vec3f &operator/=(float rhs) {
     x /= rhs;
     y /= rhs;
     z /= rhs;
     return *this;
   }
 
-  Vec3f &operator*=(const float &rhs) {
+  Vec3f &operator*=(float rhs) {
     x *= rhs;
     y *= rhs;
     z *= rhs;
@@ -92,7 +90,7 @@ struct Vec3f {
 
   float Length() const { return sqrt(*this * *this); }
 
-  void Normalize() { *this /= this->Length(); }
+  const Vec3f Normalized() const { return *this / this->Length(); }
 
   Vec3i ToVec3i() const {
     Vec3i res;
@@ -141,8 +139,7 @@ struct Face {
     const Vec3f v0 = vertex_data[v0_id];
     const Vec3f e1 = vertex_data[v1_id] - v0;
     const Vec3f e2 = vertex_data[v2_id] - v0;
-    normal = e1.CrossProduct(e2);
-    normal.Normalize();
+    normal = e1.CrossProduct(e2).Normalized();
   }
 };
 
