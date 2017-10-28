@@ -12,6 +12,7 @@ struct HitRecord {
   int material_id;
   float t;
   parser::Vec3f normal;
+  const void *obj;
 };
 
 class SceneRenderer {
@@ -23,10 +24,10 @@ private:
                       const parser::Vec3f &direction, const parser::Face &face);
   float DoesIntersect(const parser::Vec3f &origin,
                       const parser::Vec3f &direction, const parser::Mesh &mesh,
-                      float tmax);
+                      float tmax, const void *hit_obj);
   float DoesIntersect(const parser::Vec3f &origin,
                       const parser::Vec3f &direction, const parser::Mesh &mesh,
-                      parser::Face &intersecting_face);
+                      parser::Face const **intersecting_face);
   float DoesIntersect(const parser::Vec3f &origin,
                       const parser::Vec3f &direction,
                       const parser::Triangle &triangle);
@@ -34,7 +35,7 @@ private:
                       const parser::Vec3f &direction,
                       const parser::Sphere &sphere);
   HitRecord GetIntersection(const Ray &ray);
-  bool DoesIntersect(const Ray &ray, float tmax);
+  bool DoesIntersect(const Ray &ray, float tmax, const void *hit_obj);
 
   parser::Vec3f TraceRay(const Ray &ray, int depth);
   parser::Vec3f CalculateS(int i, int j);

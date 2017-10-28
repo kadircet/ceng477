@@ -9,24 +9,14 @@ constexpr const float kEpsilon = 1e-6;
 
 namespace {
 
-bool SameSide(const Vec3f &point, const Vec3f &vertex_c, const Vec3f &vertex_a,
-              const Vec3f &vertex_b) {
-  const Vec3f vec_ba = vertex_b - vertex_a;
-  const Vec3f vec_pa = point - vertex_a;
-  const Vec3f vec_ca = vertex_c - vertex_a;
-  return (vec_ba.CrossProduct(vec_pa)) * (vec_ba.CrossProduct(vec_ca)) >= .0;
-}
-
 bool NotZero(const Vec3f vec) { return vec.x != 0 || vec.y != 0 || vec.z != 0; }
 
 } // namespace
 
-inline float Determinant(Vec3f a, Vec3f b, Vec3f c)
-{
-    //vectors are columns
-    return a.x * (b.y * c.z - c.y * b.z)
-         + a.y * (c.x * b.z - b.x * c.z)
-         + a.z * (b.x * c.y - c.x * b.y);
+inline float Determinant(Vec3f a, Vec3f b, Vec3f c) {
+  // vectors are columns
+  return a.x * (b.y * c.z - c.y * b.z) + a.y * (c.x * b.z - b.x * c.z) +
+         a.z * (b.x * c.y - c.x * b.y);
 }
 
 float SceneRenderer::DoesIntersect(const Vec3f &origin, const Vec3f &direction,
@@ -46,32 +36,30 @@ float SceneRenderer::DoesIntersect(const Vec3f &origin, const Vec3f &direction,
   // a->v0 b->v1 c->v2
   const Vec3f ba = vertex_0 - vertex_1;
   const Vec3f ca = vertex_0 - vertex_2;
-  const float detA = Determinant(ba,ca,direction);
+  const float detA = Determinant(ba, ca, direction);
   const Vec3f oa = (vertex_0 - origin) / detA;
-  const float beta = Determinant(oa,ca,direction);
-  if(beta<.0f)
-  {
+  const float beta = Determinant(oa, ca, direction);
+  if (beta < .0f) {
     return std::numeric_limits<float>::infinity();
   }
-  const float gama = Determinant(ba,oa,direction);
-  if(gama<.0f || beta+gama>1.0f)
-  {
+  const float gama = Determinant(ba, oa, direction);
+  if (gama < .0f || beta + gama > 1.0f) {
     return std::numeric_limits<float>::infinity();
   }
-  const float t = Determinant(ba,ca,oa); 
-  if(t>=0 && t<=std::numeric_limits<float>::infinity())
-  {
-      return t;
-  } 
-  else
-  {
-      return std::numeric_limits<float>::infinity();
+  const float t = Determinant(ba, ca, oa);
+  if (t >= 0 && t <= std::numeric_limits<float>::infinity()) {
+    return t;
+  } else {
+    return std::numeric_limits<float>::infinity();
   }
 }
 
 float SceneRenderer::DoesIntersect(const Vec3f &origin, const Vec3f &direction,
-                                   const Mesh &mesh, float tmax) {
+                                   const Mesh &mesh, float tmax,
+                                   const void *hit_obj) {
   for (const Face &face : mesh.faces) {
+    if (&face == hit_obj)
+      continue;
     const float t = DoesIntersect(origin, direction, face);
     if (t < tmax && t > .0) {
       return t;
@@ -81,13 +69,14 @@ float SceneRenderer::DoesIntersect(const Vec3f &origin, const Vec3f &direction,
 }
 
 float SceneRenderer::DoesIntersect(const Vec3f &origin, const Vec3f &direction,
-                                   const Mesh &mesh, Face &intersecting_face) {
+                                   const Mesh &mesh,
+                                   Face const **intersecting_face) {
   float tmin = std::numeric_limits<float>::infinity();
   for (const Face &face : mesh.faces) {
     const float t = DoesIntersect(origin, direction, face);
     if (t < tmin && t > .0) {
       tmin = t;
-      intersecting_face = face;
+      *intersecting_face = &face;
     }
   }
   return tmin;
@@ -127,6 +116,7 @@ Vec3f SceneRenderer::CalculateS(int i, int j) {
 HitRecord SceneRenderer::GetIntersection(const Ray &ray) {
   int material_id = -1;
   Vec3f normal;
+  const void *hit_obj;
   float tmin = std::numeric_limits<float>::infinity();
 
   const Vec3f origin = ray.origin;
@@ -138,6 +128,7 @@ HitRecord SceneRenderer::GetIntersection(const Ray &ray) {
       tmin = t;
       material_id = obj.material_id;
       normal = obj.indices.normal;
+      hit_obj = (void *)&obj;
     }
   }
   for (const Sphere &obj : scene_.spheres) {
@@ -148,39 +139,46 @@ HitRecord SceneRenderer::GetIntersection(const Ray &ray) {
       normal =
           (direction * t + origin - scene_.vertex_data[obj.center_vertex_id])
               .Normalized();
+      hit_obj = (void *)&obj;
     }
   }
   for (const Mesh &obj : scene_.meshes) {
-    parser::Face face;
-    const float t = DoesIntersect(origin, direction, obj, face);
-    if (t < tmin && t > .0) {
+    parser::Face const *face = nullptr;
+    const float t = DoesIntersect(origin, direction, obj, &face);
+    if (t < tmin && t > .0 && face != nullptr) {
       tmin = t;
       material_id = obj.material_id;
-      normal = face.normal;
+      normal = face->normal;
+      hit_obj = (void *)face;
     }
   }
 
-  return HitRecord{material_id, tmin, normal};
+  return HitRecord{material_id, tmin, normal, hit_obj};
 }
 
-bool SceneRenderer::DoesIntersect(const Ray &ray, float tmax) {
+bool SceneRenderer::DoesIntersect(const Ray &ray, float tmax,
+                                  const void *hit_obj) {
   const Vec3f origin = ray.origin;
   const Vec3f direction = ray.direction;
 
   for (const Triangle &obj : scene_.triangles) {
+    if (&obj == hit_obj)
+      continue;
     const float t = DoesIntersect(origin, direction, obj);
     if (t < tmax + kEpsilon && t > 0.0f) {
       return true;
     }
   }
   for (const Sphere &obj : scene_.spheres) {
+    if (&obj == hit_obj)
+      continue;
     const float t = DoesIntersect(origin, direction, obj);
     if (t < tmax + kEpsilon && t > 0.0f) {
       return true;
     }
   }
   for (const Mesh &obj : scene_.meshes) {
-    const float t = DoesIntersect(origin, direction, obj, tmax);
+    const float t = DoesIntersect(origin, direction, obj, tmax, hit_obj);
     if (t < tmax + kEpsilon && t > 0.0f) {
       return true;
     }
@@ -205,12 +203,12 @@ Vec3f SceneRenderer::TraceRay(const Ray &ray, int depth) {
       // Shadow check
       const Vec3f wi = light.position - intersection_point;
       const Vec3f wi_normal = wi.Normalized();
-      //TODO: be sure if epsilon calculate is right
+      // TODO: be sure if epsilon calculate is right
       const float tmax = (wi.Length() - scene_.shadow_ray_epsilon);
       const Vec3f intersection_point_with_epsilon =
           intersection_point + (wi_normal * scene_.shadow_ray_epsilon);
       const Ray shadow_ray{intersection_point_with_epsilon, wi_normal};
-      if (DoesIntersect(shadow_ray, tmax)) {
+      if (DoesIntersect(shadow_ray, tmax, hit_record.obj)) {
         continue;
       }
 
