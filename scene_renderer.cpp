@@ -74,9 +74,14 @@ float SceneRenderer::DoesIntersect(const Vec3f &origin, const Vec3f &direction,
   float tmin = std::numeric_limits<float>::infinity();
   for (const Face &face : mesh.faces) {
     const float t = DoesIntersect(origin, direction, face);
-    if (t < tmin && t > .0) {
+    if (t < tmin && t > .0 && face.normal * direction < .0) {
       tmin = t;
       *intersecting_face = &face;
+      /*std::cout << face.v0_id << ' ' << face.v1_id << ' ' << face.v2_id
+                << std::endl;
+      std::cout.precision(30);
+      std::cout << std::fixed << tmin - t << ' ' << *intersecting_face
+                << std::endl;*/
     }
   }
   return tmin;
@@ -145,11 +150,12 @@ HitRecord SceneRenderer::GetIntersection(const Ray &ray) {
   for (const Mesh &obj : scene_.meshes) {
     parser::Face const *face = nullptr;
     const float t = DoesIntersect(origin, direction, obj, &face);
-    if (t < tmin && t > .0 && face != nullptr) {
+    if (t < tmin && t > .0) {
       tmin = t;
       material_id = obj.material_id;
       normal = face->normal;
       hit_obj = (void *)face;
+      // std::cout << "Mesh intersect:" << hit_obj << std::endl;
     }
   }
 
@@ -226,6 +232,12 @@ Vec3f SceneRenderer::TraceRay(const Ray &ray, int depth) {
       const float cos_alphap = cos_alpha > 0. ? cos_alpha : 0.;
       color += (material.specular * pow(cos_alphap, material.phong_exponent))
                    .PointWise(intensity);
+      /*wi.Print();
+      normal.Print();
+      h.Print();
+      std::cout << hit_record.obj << std::endl;
+      std::cout << cos_theta << ' ' << cos_alpha << std::endl;
+      std::cout << "---------" << std::endl;*/
     }
     // Specular reflection
     if (depth > 0 && NotZero(material.mirror)) {
