@@ -264,15 +264,14 @@ Vec3i *SceneRenderer::RenderImage(const Camera &camera) {
   const int height = camera.image_height;
   Vec3i *result = new Vec3i[width * height];
   const Vec4f view_plane = camera.near_plane;
-  const Vec3f gaze = camera.gaze;
+  const Vec3f gaze = camera.gaze.Normalized();
   const float dist = camera.near_distance;
   const float l = view_plane.x;
   const float r = view_plane.y;
   const float b = view_plane.z;
   const float t = view_plane.w;
-  const Vec3f v = camera.up;
-  const Vec3f u = gaze.CrossProduct(v);
-
+  const Vec3f u = gaze.CrossProduct(camera.up).Normalized();
+  const Vec3f v = u.CrossProduct(gaze);
   const Vec3f m = camera.position + gaze * dist;
   q = m + u * l + v * t;
   usu = u * (r - l) / camera.image_width;

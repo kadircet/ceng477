@@ -1,7 +1,7 @@
 <Scene>
     <MaxRecursionDepth>6</MaxRecursionDepth>
 
-    <ShadowRayEpsilon>5e-3</ShadowRayEpsilon>
+    <ShadowRayEpsilon>1e-4</ShadowRayEpsilon>
 
     <BackgroundColor>0 0 0</BackgroundColor>
 
