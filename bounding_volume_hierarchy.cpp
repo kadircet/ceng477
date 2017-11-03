@@ -65,15 +65,24 @@ void BoundingVolumeHierarchy::GetIntersection(const Ray& ray, Node* cur,
   if (cur->left != nullptr) {
     const BoundingBox bounding_box = cur->left->bounding_box;
     t_left = bounding_box.DoesIntersect(ray);
-    if (t_left < hit_record.t) {
-      GetIntersection(ray, cur->left, hit_record, hit_obj);
-    }
   }
   if (cur->right != nullptr) {
     const BoundingBox bounding_box = cur->right->bounding_box;
     t_right = bounding_box.DoesIntersect(ray);
+  }
+  if (t_left < t_right) {
+    if (t_left < hit_record.t) {
+      GetIntersection(ray, cur->left, hit_record, hit_obj);
+    }
     if (t_right < hit_record.t) {
       GetIntersection(ray, cur->right, hit_record, hit_obj);
+    }
+  } else {
+    if (t_right < hit_record.t) {
+      GetIntersection(ray, cur->right, hit_record, hit_obj);
+    }
+    if (t_left < hit_record.t) {
+      GetIntersection(ray, cur->left, hit_record, hit_obj);
     }
   }
 }
@@ -106,9 +115,6 @@ void BoundingVolumeHierarchy::GetIntersection(const Ray& ray, Node* cur,
     t_right = bounding_box.DoesIntersect(ray);
   }
   if (t_left < t_right) {
-    if (t_left < tmin) {
-      GetIntersection(ray, cur->left, tmax, tmin, hit_obj);
-    }
     if (t_right < tmin) {
       GetIntersection(ray, cur->right, tmax, tmin, hit_obj);
     }

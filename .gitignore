@@ -2,3 +2,4 @@
 *.ppm
 main
 *.dSYM
+perf.*
