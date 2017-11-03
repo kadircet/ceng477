@@ -16,7 +16,7 @@ const Vec3f SceneRenderer::CalculateS(int i, int j) const {
 }
 
 const Vec3f SceneRenderer::TraceRay(const Ray& ray, int depth,
-                              const Object* hit_obj = nullptr) const {
+                                    const Object* hit_obj = nullptr) const {
   Vec3f color = scene_.background_color;
   const HitRecord hit_record =
       bounding_volume_hierarchy->GetIntersection(ray, hit_obj);
@@ -70,7 +70,8 @@ const Vec3f SceneRenderer::TraceRay(const Ray& ray, int depth,
   return color;
 }
 
-const Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera& camera) const {
+const Vec3i SceneRenderer::RenderPixel(int i, int j,
+                                       const Camera& camera) const {
   const Vec3f origin = camera.position;
   const Vec3f direction = (CalculateS(i, j) - origin).Normalized();
   const Ray ray{origin, direction, false};
@@ -78,7 +79,8 @@ const Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera& camera) const
 }
 
 void SceneRenderer::RenderImage(const Camera& camera, Vec3i* result,
-                                const int min_height, const int max_height, const int width) const{
+                                const int min_height, const int max_height,
+                                const int width) const {
   for (int j = min_height; j < max_height; j++) {
     for (int i = 0; i < width; i++) {
       result[j * width + i] = RenderPixel(i, j, camera);

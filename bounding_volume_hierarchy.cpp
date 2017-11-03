@@ -1,7 +1,7 @@
 #include "bounding_volume_hierarchy.h"
 using parser::Vec3f;
 
-void BoundingBox::Expand(const BoundingBox &bounding_box) {
+void BoundingBox::Expand(const BoundingBox& bounding_box) {
   min_corner.x = fmin(min_corner.x, bounding_box.min_corner.x);
   min_corner.y = fmin(min_corner.y, bounding_box.min_corner.y);
   min_corner.z = fmin(min_corner.z, bounding_box.min_corner.z);
@@ -16,33 +16,26 @@ void BoundingBox::Expand(const BoundingBox &bounding_box) {
 
 int BoundingBox::GetMaxDimension() const {
   if (delta.x > delta.y) {
-    if (delta.x > delta.z)
-      return 0;
+    if (delta.x > delta.z) return 0;
     return 2;
   }
-  if (delta.y > delta.z)
-    return 1;
+  if (delta.y > delta.z) return 1;
   return 2;
 }
 
-float BoundingBox::DoesIntersect(const Ray &ray) const {
+float BoundingBox::DoesIntersect(const Ray& ray) const {
   float tnmax = -kInf;
   float tfmin = kInf;
   const Vec3f origin = ray.origin;
   const Vec3f direction = ray.direction;
   for (int i = 0; i < 3; i++) {
-    if (fabs(direction[i]) < kEpsilon)
-      continue;
+    if (fabs(direction[i]) < kEpsilon) continue;
     float tn = (min_corner[i] - origin[i]) / direction[i];
     float tf = (max_corner[i] - origin[i]) / direction[i];
-    if (direction[i] < 0)
-      std::swap(tn, tf);
-    if (tn > tnmax)
-      tnmax = tn;
-    if (tf < tfmin)
-      tfmin = tf;
-    if (tnmax > tfmin)
-      return kInf;
+    if (direction[i] < 0) std::swap(tn, tf);
+    if (tn > tnmax) tnmax = tn;
+    if (tf < tfmin) tfmin = tf;
+    if (tnmax > tfmin) return kInf;
   }
   return tnmax;
 }
@@ -50,16 +43,15 @@ float BoundingBox::DoesIntersect(const Ray &ray) const {
 Vec3f BoundingBox::GetExtent() const { return delta; }
 Vec3f BoundingBox::GetCenter() const { return center; }
 
-void BoundingVolumeHierarchy::GetIntersection(const Ray &ray, Node *cur,
-                                              HitRecord &hit_record,
-                                              const Object *hit_obj) const {
+void BoundingVolumeHierarchy::GetIntersection(const Ray& ray, Node* cur,
+                                              HitRecord& hit_record,
+                                              const Object* hit_obj) const {
   const int left = cur->start;
   const int right = cur->end;
 
   if (left + 1 == right) {
-    const Object *leaf = (*objects_)[left];
-    if (leaf == hit_obj)
-      return;
+    const Object* leaf = (*objects_)[left];
+    if (leaf == hit_obj) return;
     const HitRecord rec = leaf->GetIntersection(ray);
     if (rec.t < hit_record.t && rec.t > .0) {
       hit_record = rec;
@@ -85,18 +77,16 @@ void BoundingVolumeHierarchy::GetIntersection(const Ray &ray, Node *cur,
   }
 }
 
-void BoundingVolumeHierarchy::GetIntersection(const Ray &ray, Node *cur,
-                                              float tmax, float &tmin,
-                                              const Object *hit_obj) const {
+void BoundingVolumeHierarchy::GetIntersection(const Ray& ray, Node* cur,
+                                              float tmax, float& tmin,
+                                              const Object* hit_obj) const {
   const int left = cur->start;
   const int right = cur->end;
-  if (tmin < tmax + kEpsilon)
-    return;
+  if (tmin < tmax + kEpsilon) return;
 
   if (left + 1 == right) {
-    const Object *leaf = (*objects_)[left];
-    if (leaf == hit_obj)
-      return;
+    const Object* leaf = (*objects_)[left];
+    if (leaf == hit_obj) return;
     const HitRecord rec = leaf->GetIntersection(ray);
     if (rec.t < tmin && rec.t > .0) {
       tmin = rec.t;
@@ -131,30 +121,27 @@ void BoundingVolumeHierarchy::GetIntersection(const Ray &ray, Node *cur,
   }
 }
 
-HitRecord
-BoundingVolumeHierarchy::GetIntersection(const Ray &ray,
-                                         const Object *hit_obj) const {
+HitRecord BoundingVolumeHierarchy::GetIntersection(
+    const Ray& ray, const Object* hit_obj) const {
   HitRecord hit_record;
   hit_record.t = kInf;
   hit_record.material_id = -1;
   const BoundingBox bounding_box = tree_->bounding_box;
   const float t = bounding_box.DoesIntersect(ray);
-  if (t < kInf)
-    GetIntersection(ray, tree_, hit_record, hit_obj);
+  if (t < kInf) GetIntersection(ray, tree_, hit_record, hit_obj);
   return hit_record;
 }
 
-bool BoundingVolumeHierarchy::GetIntersection(const Ray &ray, float tmax,
-                                              const Object *hit_obj) const {
+bool BoundingVolumeHierarchy::GetIntersection(const Ray& ray, float tmax,
+                                              const Object* hit_obj) const {
   float tmin = kInf;
   const BoundingBox bounding_box = tree_->bounding_box;
   const float t = bounding_box.DoesIntersect(ray);
-  if (t < kInf)
-    GetIntersection(ray, tree_, tmax, tmin, hit_obj);
+  if (t < kInf) GetIntersection(ray, tree_, tmax, tmin, hit_obj);
   return tmin < tmax + kEpsilon && tmin > .0;
 }
 
-void BoundingVolumeHierarchy::build(Node *cur, int left, int right) {
+void BoundingVolumeHierarchy::build(Node* cur, int left, int right) {
   cur->left = nullptr;
   cur->right = nullptr;
   cur->start = left;
@@ -163,15 +150,14 @@ void BoundingVolumeHierarchy::build(Node *cur, int left, int right) {
     cur->bounding_box.Expand((*objects_)[i]->GetBoundingBox());
   }
 
-  if (left + 1 >= right)
-    return;
+  if (left + 1 >= right) return;
 
   const int max_dimension = cur->bounding_box.GetMaxDimension();
   const float mean = cur->bounding_box.GetExtent()[max_dimension] / 2.;
 
   int mid_idx = left;
   for (int i = left; i < right; i++) {
-    const Object *obj = (*objects_)[i];
+    const Object* obj = (*objects_)[i];
     if (obj->GetBoundingBox().GetCenter()[max_dimension] < mean) {
       std::swap((*objects_)[i], (*objects_)[mid_idx++]);
     }
@@ -190,7 +176,7 @@ void BoundingVolumeHierarchy::build(Node *cur, int left, int right) {
   }
 }
 
-BoundingVolumeHierarchy::BoundingVolumeHierarchy(std::vector<Object *> *objects)
+BoundingVolumeHierarchy::BoundingVolumeHierarchy(std::vector<Object*>* objects)
     : objects_(objects) {
   tree_ = new Node;
   build(tree_, 0, objects_->size());
