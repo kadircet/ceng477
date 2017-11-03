@@ -11,117 +11,8 @@ bool NotZero(const Vec3f vec) { return vec.x != 0 || vec.y != 0 || vec.z != 0; }
 
 }  // namespace
 
-float SceneRenderer::DoesIntersect(const Vec3f& origin, const Vec3f& direction,
-                                   const Face& face) {
-  const Vec3f vertex_0 = scene_.vertex_data[face.v0_id];
-  const Vec3f vertex_1 = scene_.vertex_data[face.v1_id];
-  const Vec3f vertex_2 = scene_.vertex_data[face.v2_id];
-  // a->v0 b->v1 c->v2
-  const Vec3f ba = vertex_0 - vertex_1;
-  const Vec3f ca = vertex_0 - vertex_2;
-  const float detA = Determinant(ba, ca, direction);
-  const Vec3f oa = (vertex_0 - origin) / detA;
-  const float beta = Determinant(oa, ca, direction);
-  if (beta < .0f) {
-    return std::numeric_limits<float>::infinity();
-  }
-  const float gama = Determinant(ba, oa, direction);
-  if (gama < .0f || beta + gama > 1.0f) {
-    return std::numeric_limits<float>::infinity();
-  }
-  const float t = Determinant(ba, ca, oa);
-  if (t >= 0 && t <= std::numeric_limits<float>::infinity()) {
-    return t;
-  } else {
-    return std::numeric_limits<float>::infinity();
-  }
-}
-
-float SceneRenderer::DoesIntersect(const Vec3f& origin, const Vec3f& direction,
-                                   const Mesh& mesh, float tmax,
-                                   const void* hit_obj) {
-  for (const Face& face : mesh.faces) {
-    if (&face == hit_obj) continue;
-    const float t = DoesIntersect(origin, direction, face);
-    if (t < tmax && t > .0) {
-      return t;
-    }
-  }
-  return std::numeric_limits<float>::infinity();
-}
-
-float SceneRenderer::DoesIntersect(const Vec3f& origin, const Vec3f& direction,
-                                   const Mesh& mesh,
-                                   Face const** intersecting_face) {
-  float tmin = std::numeric_limits<float>::infinity();
-  for (const Face& face : mesh.faces) {
-    const float t = DoesIntersect(origin, direction, face);
-    if (t < tmin && t > .0 && face.normal * direction < .0) {
-      tmin = t;
-      *intersecting_face = &face;
-    }
-  }
-  return tmin;
-}
-
-float SceneRenderer::DoesIntersect(const Vec3f& origin, const Vec3f& direction,
-                                   const Triangle& triangle) {
-  return DoesIntersect(origin, direction, triangle.indices);
-}
-
-float SceneRenderer::DoesIntersect(const Vec3f& origin, const Vec3f& direction,
-                                   const Sphere& sphere) {
-  const Vec3f center_of_sphere = scene_.vertex_data[sphere.center_vertex_id];
-  const Vec3f sphere_to_camera = origin - center_of_sphere;
-  const float direction_times_sphere_to_camera = direction * sphere_to_camera;
-  const float norm_of_sphere_to_camera_squared =
-      sphere_to_camera * sphere_to_camera;
-  const float radius_squared = sphere.radius * sphere.radius;
-  const float determinant =
-      direction_times_sphere_to_camera * direction_times_sphere_to_camera -
-      (norm_of_sphere_to_camera_squared - radius_squared);
-  if (determinant < -kEpsilon) {
-    return std::numeric_limits<float>::infinity();
-  } else if (determinant < kEpsilon) {
-    return -direction_times_sphere_to_camera;
-  } else {
-    const float sqrt_determinant = sqrt(determinant);
-    const float t1 = (-direction_times_sphere_to_camera + sqrt_determinant);
-    const float t2 = (-direction_times_sphere_to_camera - sqrt_determinant);
-    return fmin(t1, t2);
-  }
-}
-
 Vec3f SceneRenderer::CalculateS(int i, int j) {
   return q + usu * (i + .5) - vsv * (j + .5);
-}
-
-bool SceneRenderer::DoesIntersect(const Ray& ray, float tmax,
-                                  const void* hit_obj) {
-  const Vec3f origin = ray.origin;
-  const Vec3f direction = ray.direction;
-
-  for (const Triangle& obj : scene_.triangles) {
-    if (&obj == hit_obj) continue;
-    const float t = DoesIntersect(origin, direction, obj);
-    if (t < tmax + kEpsilon && t > 0.0f) {
-      return true;
-    }
-  }
-  for (const Sphere& obj : scene_.spheres) {
-    if (&obj == hit_obj) continue;
-    const float t = DoesIntersect(origin, direction, obj);
-    if (t < tmax + kEpsilon && t > 0.0f) {
-      return true;
-    }
-  }
-  for (const Mesh& obj : scene_.meshes) {
-    const float t = DoesIntersect(origin, direction, obj, tmax, hit_obj);
-    if (t < tmax + kEpsilon && t > 0.0f) {
-      return true;
-    }
-  }
-  return false;
 }
 
 Vec3f SceneRenderer::TraceRay(const Ray& ray, int depth,
@@ -133,7 +24,8 @@ Vec3f SceneRenderer::TraceRay(const Ray& ray, int depth,
 
   if (material_id != -1) {
     const Vec3f origin = ray.origin;
-    const Vec3f intersection_point = origin + ray.direction * hit_record.t;
+    const Vec3f direction = ray.direction;
+    const Vec3f intersection_point = origin + direction * hit_record.t;
     const Vec3f normal = hit_record.normal;
     const Material material = scene_.materials[material_id];
     color = scene_.ambient_light.PointWise(material.ambient);
@@ -145,17 +37,11 @@ Vec3f SceneRenderer::TraceRay(const Ray& ray, int depth,
       const Ray shadow_ray{
           intersection_point + wi_normal * scene_.shadow_ray_epsilon, wi_normal,
           true};
-      /*std::cout << "|wi|=" << wi.Length() << std::endl;
-      shadow_ray.direction.Print();
-      shadow_ray.origin.Print();*/
       if (bounding_volume_hierarchy->GetIntersection(
               shadow_ray, wi.Length() - scene_.shadow_ray_epsilon,
               hit_record.obj)) {
-        // std::cout << "HERE" << std::endl;
         continue;
       }
-      // std::cout << "THERE" << std::endl;
-
       const float r_square = wi * wi;
       const Vec3f intensity = light.intensity / r_square;
 
@@ -165,7 +51,7 @@ Vec3f SceneRenderer::TraceRay(const Ray& ray, int depth,
       color += (material.diffuse * cos_thetap).PointWise(intensity);
 
       // Specular light
-      const Vec3f h = (wi_normal - ray.direction).Normalized();
+      const Vec3f h = (wi_normal - direction).Normalized();
       const float cos_alpha = normal * h;
       const float cos_alphap = cos_alpha > 0. ? cos_alpha : 0.;
       color += (material.specular * pow(cos_alphap, material.phong_exponent))
@@ -174,7 +60,7 @@ Vec3f SceneRenderer::TraceRay(const Ray& ray, int depth,
     // Specular reflection
     if (depth > 0 && NotZero(material.mirror)) {
       const Vec3f wi =
-          (ray.direction + normal * -2 * (ray.direction * normal)).Normalized();
+          (direction + normal * -2 * (direction * normal)).Normalized();
       const Ray reflection_ray{
           intersection_point + wi * scene_.shadow_ray_epsilon, wi, false};
       color += TraceRay(reflection_ray, depth - 1, hit_record.obj)
@@ -231,6 +117,5 @@ SceneRenderer::SceneRenderer(const char* scene_path) {
       objects_.push_back(&obj);
     }
   }
-  bounding_volume_hierarchy = new BoundingVolumeHierarchy(&objects_, &scene_);
-  std::cout << "TREE BUILT" << std::endl;
+  bounding_volume_hierarchy = new BoundingVolumeHierarchy(&objects_);
 }

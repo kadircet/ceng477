@@ -17,7 +17,7 @@ int max(int a, int b) { return a > b ? a : b; }
 
 int min(int a, int b) { return a < b ? a : b; }
 
-int round(float a) { return (int)(a > 0 ? a + .5 : a - .5); }
+int round(float a) { return (int)a; }  //(int)(a > 0 ? a + .5 : a - .5); }
 
 }  // namespace
 

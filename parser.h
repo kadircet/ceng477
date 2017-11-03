@@ -42,38 +42,50 @@ struct Material {
 };
 
 struct Face : Object {
-  int v0_id;
-  int v1_id;
-  int v2_id;
+  Vec3f v0;
+  Vec3f v1;
+  Vec3f v2;
   int material_id;
   Vec3f normal;
 
-  void SayMyName() const { std::cout << "Face" << v0_id << std::endl; }
+  void CalculateNormal() {
+    ba = v0 - v1;
+    ca = v0 - v2;
+    normal = ba.CrossProduct(ca).Normalized();
 
-  void CalculateNormal(const std::vector<Vec3f>& vertex_data) {
-    const Vec3f v0 = vertex_data[v0_id];
-    const Vec3f e1 = vertex_data[v1_id] - v0;
-    const Vec3f e2 = vertex_data[v2_id] - v0;
-    normal = e1.CrossProduct(e2).Normalized();
+    Vec3f min_c = v0;
+    Vec3f max_c = v0;
+
+    min_c.x = fmin(min_c.x, v1.x);
+    min_c.y = fmin(min_c.y, v1.y);
+    min_c.z = fmin(min_c.z, v1.z);
+
+    max_c.x = fmax(max_c.x, v1.x);
+    max_c.y = fmax(max_c.y, v1.y);
+    max_c.z = fmax(max_c.z, v1.z);
+
+    min_c.x = fmin(min_c.x, v2.x);
+    min_c.y = fmin(min_c.y, v2.y);
+    min_c.z = fmin(min_c.z, v2.z);
+
+    max_c.x = fmax(max_c.x, v2.x);
+    max_c.y = fmax(max_c.y, v2.y);
+    max_c.z = fmax(max_c.z, v2.z);
+    bounding_box.min_corner = min_c;
+    bounding_box.max_corner = max_c;
   }
 
-  HitRecord GetIntersection(const Ray& ray, const Scene& scene) const {
+  HitRecord GetIntersection(const Ray& ray) const {
     HitRecord hit_record;
     hit_record.t = kInf;
     hit_record.material_id = -1;
     if (!ray.is_shadow && ray.direction * normal > .0) {
       return hit_record;
     }
-    const std::vector<Vec3f> vertex_data = scene.vertex_data;
     const Vec3f direction = ray.direction;
-    const Vec3f vertex_0 = vertex_data[v0_id];
-    const Vec3f vertex_1 = vertex_data[v1_id];
-    const Vec3f vertex_2 = vertex_data[v2_id];
     // a->v0 b->v1 c->v2
-    const Vec3f ba = vertex_0 - vertex_1;
-    const Vec3f ca = vertex_0 - vertex_2;
     const float detA = Determinant(ba, ca, direction);
-    const Vec3f oa = (vertex_0 - ray.origin) / detA;
+    const Vec3f oa = (v0 - ray.origin) / detA;
     const float beta = Determinant(oa, ca, direction);
     if (beta < -kEpsilon) {
       return hit_record;
@@ -83,7 +95,7 @@ struct Face : Object {
       return hit_record;
     }
     const float t = Determinant(ba, ca, oa);
-    if (t >= -kEpsilon && t <= std::numeric_limits<float>::infinity()) {
+    if (t > -kEpsilon) {
       hit_record.t = t;
       hit_record.normal = normal;
       hit_record.material_id = material_id;
@@ -92,35 +104,12 @@ struct Face : Object {
     return hit_record;
   }
 
-  BoundingBox GetBoundingBox(const Scene& scene) const {
-    if (bounding_box == nullptr) {
-      const std::vector<Vec3f> vertex_data = scene.vertex_data;
-      Vec3f min_c = vertex_data[v0_id];
-      Vec3f max_c = vertex_data[v0_id];
-
-      min_c.x = fmin(min_c.x, vertex_data[v1_id].x);
-      min_c.y = fmin(min_c.y, vertex_data[v1_id].y);
-      min_c.z = fmin(min_c.z, vertex_data[v1_id].z);
-
-      max_c.x = fmax(max_c.x, vertex_data[v1_id].x);
-      max_c.y = fmax(max_c.y, vertex_data[v1_id].y);
-      max_c.z = fmax(max_c.z, vertex_data[v1_id].z);
-
-      min_c.x = fmin(min_c.x, vertex_data[v2_id].x);
-      min_c.y = fmin(min_c.y, vertex_data[v2_id].y);
-      min_c.z = fmin(min_c.z, vertex_data[v2_id].z);
-
-      max_c.x = fmax(max_c.x, vertex_data[v2_id].x);
-      max_c.y = fmax(max_c.y, vertex_data[v2_id].y);
-      max_c.z = fmax(max_c.z, vertex_data[v2_id].z);
-      bounding_box = std::make_unique<BoundingBox>(min_c, max_c);
-    }
-
-    return *bounding_box;
-  }
+  const BoundingBox GetBoundingBox() const { return bounding_box; }
 
  private:
-  mutable std::unique_ptr<BoundingBox> bounding_box;
+  BoundingBox bounding_box;
+  Vec3f ba;
+  Vec3f ca;
 };  // namespace parser
 
 struct Mesh {
@@ -135,19 +124,16 @@ struct Triangle {
 
 struct Sphere : Object {
   int material_id;
-  int center_vertex_id;
+  Vec3f center_of_sphere;
   float radius;
 
-  void SayMyName() const { std::cout << "Sphere" << std::endl; }
-
-  Vec3f GetNormal(float t, const Ray& ray, const Vec3f& center) const {
-    return (ray.direction * t + ray.origin - center).Normalized();
+  Vec3f GetNormal(float t, const Ray& ray) const {
+    return (ray.direction * t + ray.origin - center_of_sphere).Normalized();
   }
 
-  HitRecord GetIntersection(const Ray& ray, const Scene& scene) const {
+  HitRecord GetIntersection(const Ray& ray) const {
     HitRecord hit_record;
     hit_record.material_id = -1;
-    const Vec3f center_of_sphere = scene.vertex_data[center_vertex_id];
     const Vec3f sphere_to_camera = ray.origin - center_of_sphere;
     const float direction_times_sphere_to_camera =
         ray.direction * sphere_to_camera;
@@ -168,25 +154,22 @@ struct Sphere : Object {
       hit_record.t = fmin(t1, t2);
     }
     hit_record.material_id = material_id;
-    hit_record.normal = GetNormal(hit_record.t, ray, center_of_sphere);
+    hit_record.normal = GetNormal(hit_record.t, ray);
     hit_record.obj = this;
     return hit_record;
   }
 
-  BoundingBox GetBoundingBox(const Scene& scene) const {
-    if (bounding_box == nullptr) {
-      const Vec3f vertex_data = scene.vertex_data[center_vertex_id];
-      const Vec3f rad_vec = Vec3f(radius, radius, radius);
-      const Vec3f min_c = vertex_data - rad_vec;
-      const Vec3f max_c = vertex_data + rad_vec;
-      bounding_box = std::make_unique<BoundingBox>(min_c, max_c);
-    }
-
-    return *bounding_box;
+  void Initialize() {
+    const Vec3f rad_vec = Vec3f(radius, radius, radius);
+    const Vec3f min_c = center_of_sphere - rad_vec;
+    const Vec3f max_c = center_of_sphere + rad_vec;
+    bounding_box.min_corner = min_c;
+    bounding_box.max_corner = max_c;
   }
 
- private:
-  mutable std::unique_ptr<BoundingBox> bounding_box;
+  const BoundingBox GetBoundingBox() const { return bounding_box; }
+
+  BoundingBox bounding_box;
 };
 
 }  // namespace parser

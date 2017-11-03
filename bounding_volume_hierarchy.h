@@ -31,23 +31,17 @@ class BoundingBox {
   int GetMaxDimension() const;
   parser::Vec3f GetExtent() const;
   parser::Vec3f GetCenter() const;
-  void Print() const {
-    min_corner.Print();
-    max_corner.Print();
-    std::cout << "==========" << std::endl;
-  }
 
- private:
   parser::Vec3f min_corner;
   parser::Vec3f max_corner;
+  parser::Vec3f delta;
+  parser::Vec3f center;
 };
 
 class Object {
  public:
-  virtual HitRecord GetIntersection(const Ray& ray,
-                                    const parser::Scene& scene) const = 0;
-  virtual BoundingBox GetBoundingBox(const parser::Scene& scene) const = 0;
-  virtual void SayMyName() const = 0;
+  virtual HitRecord GetIntersection(const Ray& ray) const = 0;
+  virtual const BoundingBox GetBoundingBox() const = 0;
 };
 
 struct Node {
@@ -60,8 +54,7 @@ struct Node {
 
 class BoundingVolumeHierarchy {
  public:
-  BoundingVolumeHierarchy(std::vector<Object*>* objects,
-                          const parser::Scene* scene);
+  BoundingVolumeHierarchy(std::vector<Object*>* objects);
   HitRecord GetIntersection(const Ray& ray, const Object* hit_obj) const;
   bool GetIntersection(const Ray& ray, float tmax, const Object* hit_obj) const;
 
@@ -74,7 +67,6 @@ class BoundingVolumeHierarchy {
 
   std::vector<Object*>* objects_;
   Node* tree_;
-  const parser::Scene* scene_;
 };
 
 #endif
