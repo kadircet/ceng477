@@ -61,6 +61,9 @@ struct Face : Object {
     HitRecord hit_record;
     hit_record.t = kInf;
     hit_record.material_id = -1;
+    if (!ray.is_shadow && ray.direction * normal > .0) {
+      return hit_record;
+    }
     const std::vector<Vec3f> vertex_data = scene.vertex_data;
     const Vec3f direction = ray.direction;
     const Vec3f vertex_0 = vertex_data[v0_id];
@@ -72,15 +75,15 @@ struct Face : Object {
     const float detA = Determinant(ba, ca, direction);
     const Vec3f oa = (vertex_0 - ray.origin) / detA;
     const float beta = Determinant(oa, ca, direction);
-    if (beta < .0f) {
+    if (beta < -kEpsilon) {
       return hit_record;
     }
     const float gama = Determinant(ba, oa, direction);
-    if (gama < .0f || beta + gama > 1.0f) {
+    if (gama < -kEpsilon || beta + gama > 1.0f + kEpsilon) {
       return hit_record;
     }
     const float t = Determinant(ba, ca, oa);
-    if (t >= 0 && t <= std::numeric_limits<float>::infinity()) {
+    if (t >= -kEpsilon && t <= std::numeric_limits<float>::infinity()) {
       hit_record.t = t;
       hit_record.normal = normal;
       hit_record.material_id = material_id;

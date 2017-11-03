@@ -143,14 +143,18 @@ Vec3f SceneRenderer::TraceRay(const Ray& ray, int depth,
       const Vec3f wi = light.position - intersection_point;
       const Vec3f wi_normal = wi.Normalized();
       const Ray shadow_ray{
-          intersection_point + wi_normal * scene_.shadow_ray_epsilon,
-          wi_normal};
-      // std::cout << "|wi|=" << wi.Length() << std::endl;
+          intersection_point + wi_normal * scene_.shadow_ray_epsilon, wi_normal,
+          true};
+      /*std::cout << "|wi|=" << wi.Length() << std::endl;
+      shadow_ray.direction.Print();
+      shadow_ray.origin.Print();*/
       if (bounding_volume_hierarchy->GetIntersection(
               shadow_ray, wi.Length() - scene_.shadow_ray_epsilon,
               hit_record.obj)) {
+        // std::cout << "HERE" << std::endl;
         continue;
       }
+      // std::cout << "THERE" << std::endl;
 
       const float r_square = wi * wi;
       const Vec3f intensity = light.intensity / r_square;
@@ -172,7 +176,7 @@ Vec3f SceneRenderer::TraceRay(const Ray& ray, int depth,
       const Vec3f wi =
           (ray.direction + normal * -2 * (ray.direction * normal)).Normalized();
       const Ray reflection_ray{
-          intersection_point + wi * scene_.shadow_ray_epsilon, wi};
+          intersection_point + wi * scene_.shadow_ray_epsilon, wi, false};
       color += TraceRay(reflection_ray, depth - 1, hit_record.obj)
                    .PointWise(material.mirror);
     }
@@ -183,7 +187,7 @@ Vec3f SceneRenderer::TraceRay(const Ray& ray, int depth,
 Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera& camera) {
   const Vec3f origin = camera.position;
   const Vec3f direction = (CalculateS(i, j) - origin).Normalized();
-  const Ray ray{origin, direction};
+  const Ray ray{origin, direction, false};
   return SceneRenderer::TraceRay(ray, scene_.max_recursion_depth).ToVec3i();
 }
 

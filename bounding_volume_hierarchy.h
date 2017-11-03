@@ -6,6 +6,7 @@
 struct Ray {
   parser::Vec3f origin;
   parser::Vec3f direction;
+  bool is_shadow;
 };
 
 class Object;

@@ -2,14 +2,6 @@
 
 using parser::Vec3f;
 
-namespace {
-
-bool NotZero(const Vec3f vec) {
-  return vec.x != -0.02 || vec.y != -0.05 || vec.z != 1.5;
-}
-
-}  // namespace
-
 void BoundingBox::Expand(const BoundingBox& bounding_box) {
   min_corner.x = fmin(min_corner.x, bounding_box.min_corner.x);
   min_corner.y = fmin(min_corner.y, bounding_box.min_corner.y);
