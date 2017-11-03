@@ -1,111 +1,22 @@
 #ifndef __HW1__PARSER__
 #define __HW1__PARSER__
 
-#include <cmath>
-#include <iostream>
+#include <limits>
+#include <memory>
 #include <string>
 #include <vector>
+#include "bounding_volume_hierarchy.h"
+#include "vector.h"
 
 namespace parser {
-// Notice that all the structures are as simple as possible
-// so that you are not enforced to adopt any style or design.
 namespace {
-int max(int a, int b) { return a > b ? a : b; }
 
-int min(int a, int b) { return a < b ? a : b; }
-
-int round(float a) { return (int)(a > 0 ? a + .5 : a - .5); }
-} // namespace
-
-struct Vec3i {
-  int x, y, z;
-};
-
-struct Vec3f {
-  float x, y, z;
-
-  Vec3f() {}
-
-  Vec3f(float x, float y, float z) {
-    this->x = x;
-    this->y = y;
-    this->z = z;
-  }
-
-  Vec3f(const Vec3i rhs) {
-    this->x = rhs.x;
-    this->y = rhs.y;
-    this->z = rhs.z;
-  }
-
-  Vec3f operator+(const Vec3f rhs) const {
-    return Vec3f(x + rhs.x, y + rhs.y, z + rhs.z);
-  }
-
-  Vec3f operator-(const Vec3f rhs) const {
-    return Vec3f(x - rhs.x, y - rhs.y, z - rhs.z);
-  }
-
-  // Dot product.
-  float operator*(const Vec3f rhs) const {
-    return x * rhs.x + y * rhs.y + z * rhs.z;
-  }
-
-  Vec3f operator*(float rhs) const { return Vec3f(x * rhs, y * rhs, z * rhs); }
-
-  Vec3f operator/(float rhs) const {
-    Vec3f result(x / rhs, y / rhs, z / rhs);
-    return result;
-  }
-
-  Vec3f &operator/=(float rhs) {
-    x /= rhs;
-    y /= rhs;
-    z /= rhs;
-    return *this;
-  }
-
-  Vec3f &operator*=(float rhs) {
-    x *= rhs;
-    y *= rhs;
-    z *= rhs;
-    return *this;
-  }
-
-  Vec3f &operator+=(const Vec3f rhs) {
-    x += rhs.x;
-    y += rhs.y;
-    z += rhs.z;
-    return *this;
-  }
-
-  Vec3f CrossProduct(const Vec3f rhs) const {
-    return Vec3f(y * rhs.z - z * rhs.y, z * rhs.x - x * rhs.z,
-                 x * rhs.y - y * rhs.x);
-  }
-
-  Vec3f PointWise(const Vec3f rhs) const {
-    return Vec3f(x * rhs.x, y * rhs.y, z * rhs.z);
-  }
-
-  float Length() const { return sqrt(*this * *this); }
-
-  const Vec3f Normalized() const { return *this / this->Length(); }
-
-  Vec3i ToVec3i() const {
-    Vec3i res;
-    res.x = min(255, max(0, round(x)));
-    res.y = min(255, max(0, round(y)));
-    res.z = min(255, max(0, round(z)));
-    return res;
-  }
-
-  void Print() const { std::cout << x << ' ' << y << ' ' << z << std::endl; }
-};
-
-struct Vec4f {
-  float x, y, z, w;
-};
+float Determinant(Vec3f a, Vec3f b, Vec3f c) {
+  // vectors are columns
+  return a.x * (b.y * c.z - c.y * b.z) + a.y * (c.x * b.z - b.x * c.z) +
+         a.z * (b.x * c.y - c.x * b.y);
+}
+}  // namespace
 
 struct Camera {
   Vec3f position;
@@ -130,18 +41,84 @@ struct Material {
   float phong_exponent;
 };
 
-struct Face {
+struct Face : Object {
   int v0_id;
   int v1_id;
   int v2_id;
+  int material_id;
   Vec3f normal;
-  void CalculateNormal(const std::vector<Vec3f> &vertex_data) {
+
+  void SayMyName() const { std::cout << "Face" << v0_id << std::endl; }
+
+  void CalculateNormal(const std::vector<Vec3f>& vertex_data) {
     const Vec3f v0 = vertex_data[v0_id];
     const Vec3f e1 = vertex_data[v1_id] - v0;
     const Vec3f e2 = vertex_data[v2_id] - v0;
     normal = e1.CrossProduct(e2).Normalized();
   }
-};
+
+  HitRecord GetIntersection(const Ray& ray, const Scene& scene) const {
+    HitRecord hit_record;
+    hit_record.t = kInf;
+    hit_record.material_id = -1;
+    const std::vector<Vec3f> vertex_data = scene.vertex_data;
+    const Vec3f direction = ray.direction;
+    const Vec3f vertex_0 = vertex_data[v0_id];
+    const Vec3f vertex_1 = vertex_data[v1_id];
+    const Vec3f vertex_2 = vertex_data[v2_id];
+    // a->v0 b->v1 c->v2
+    const Vec3f ba = vertex_0 - vertex_1;
+    const Vec3f ca = vertex_0 - vertex_2;
+    const float detA = Determinant(ba, ca, direction);
+    const Vec3f oa = (vertex_0 - ray.origin) / detA;
+    const float beta = Determinant(oa, ca, direction);
+    if (beta < .0f) {
+      return hit_record;
+    }
+    const float gama = Determinant(ba, oa, direction);
+    if (gama < .0f || beta + gama > 1.0f) {
+      return hit_record;
+    }
+    const float t = Determinant(ba, ca, oa);
+    if (t >= 0 && t <= std::numeric_limits<float>::infinity()) {
+      hit_record.t = t;
+      hit_record.normal = normal;
+      hit_record.material_id = material_id;
+      hit_record.obj = this;
+    }
+    return hit_record;
+  }
+
+  BoundingBox GetBoundingBox(const Scene& scene) const {
+    if (bounding_box == nullptr) {
+      const std::vector<Vec3f> vertex_data = scene.vertex_data;
+      Vec3f min_c = vertex_data[v0_id];
+      Vec3f max_c = vertex_data[v0_id];
+
+      min_c.x = fmin(min_c.x, vertex_data[v1_id].x);
+      min_c.y = fmin(min_c.y, vertex_data[v1_id].y);
+      min_c.z = fmin(min_c.z, vertex_data[v1_id].z);
+
+      max_c.x = fmax(max_c.x, vertex_data[v1_id].x);
+      max_c.y = fmax(max_c.y, vertex_data[v1_id].y);
+      max_c.z = fmax(max_c.z, vertex_data[v1_id].z);
+
+      min_c.x = fmin(min_c.x, vertex_data[v2_id].x);
+      min_c.y = fmin(min_c.y, vertex_data[v2_id].y);
+      min_c.z = fmin(min_c.z, vertex_data[v2_id].z);
+
+      max_c.x = fmax(max_c.x, vertex_data[v2_id].x);
+      max_c.y = fmax(max_c.y, vertex_data[v2_id].y);
+      max_c.z = fmax(max_c.z, vertex_data[v2_id].z);
+      bounding_box = std::make_unique<BoundingBox>(min_c, max_c);
+    }
+
+    return *bounding_box;
+  }
+
+ private:
+  mutable std::unique_ptr<BoundingBox> bounding_box;
+};  // namespace parser
 
 struct Mesh {
   int material_id;
@@ -153,29 +130,62 @@ struct Triangle {
   Face indices;
 };
 
-struct Sphere {
+struct Sphere : Object {
   int material_id;
   int center_vertex_id;
   float radius;
+
+  void SayMyName() const { std::cout << "Sphere" << std::endl; }
+
+  Vec3f GetNormal(float t, const Ray& ray, const Vec3f& center) const {
+    return (ray.direction * t + ray.origin - center).Normalized();
+  }
+
+  HitRecord GetIntersection(const Ray& ray, const Scene& scene) const {
+    HitRecord hit_record;
+    hit_record.material_id = -1;
+    const Vec3f center_of_sphere = scene.vertex_data[center_vertex_id];
+    const Vec3f sphere_to_camera = ray.origin - center_of_sphere;
+    const float direction_times_sphere_to_camera =
+        ray.direction * sphere_to_camera;
+    const float norm_of_sphere_to_camera_squared =
+        sphere_to_camera * sphere_to_camera;
+    const float radius_squared = radius * radius;
+    const float determinant =
+        direction_times_sphere_to_camera * direction_times_sphere_to_camera -
+        (norm_of_sphere_to_camera_squared - radius_squared);
+    hit_record.t = std::numeric_limits<float>::infinity();
+    if (determinant < -kEpsilon) {
+      return hit_record;
+    } else if (determinant < kEpsilon) {
+      hit_record.t = -direction_times_sphere_to_camera;
+    } else {
+      const float t1 = (-direction_times_sphere_to_camera + sqrt(determinant));
+      const float t2 = (-direction_times_sphere_to_camera - sqrt(determinant));
+      hit_record.t = fmin(t1, t2);
+    }
+    hit_record.material_id = material_id;
+    hit_record.normal = GetNormal(hit_record.t, ray, center_of_sphere);
+    hit_record.obj = this;
+    return hit_record;
+  }
+
+  BoundingBox GetBoundingBox(const Scene& scene) const {
+    if (bounding_box == nullptr) {
+      const Vec3f vertex_data = scene.vertex_data[center_vertex_id];
+      const Vec3f rad_vec = Vec3f(radius, radius, radius);
+      const Vec3f min_c = vertex_data - rad_vec;
+      const Vec3f max_c = vertex_data + rad_vec;
+      bounding_box = std::make_unique<BoundingBox>(min_c, max_c);
+    }
+
+    return *bounding_box;
+  }
+
+ private:
+  mutable std::unique_ptr<BoundingBox> bounding_box;
 };
 
-struct Scene {
-  // Data
-  Vec3i background_color;
-  float shadow_ray_epsilon;
-  int max_recursion_depth;
-  std::vector<Camera> cameras;
-  Vec3f ambient_light;
-  std::vector<PointLight> point_lights;
-  std::vector<Material> materials;
-  std::vector<Vec3f> vertex_data;
-  std::vector<Mesh> meshes;
-  std::vector<Triangle> triangles;
-  std::vector<Sphere> spheres;
-
-  // Functions
-  void loadFromXml(const std::string &filepath);
-};
-} // namespace parser
+}  // namespace parser
 
 #endif

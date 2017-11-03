@@ -1,9 +1,9 @@
 #include "ppm.h"
 #include <stdexcept>
 
-void write_ppm(const char *filename, unsigned char *data, int width,
+void write_ppm(const char* filename, unsigned char* data, int width,
                int height) {
-  FILE *outfile;
+  FILE* outfile;
 
   if ((outfile = fopen(filename, "w")) == NULL) {
     throw std::runtime_error(

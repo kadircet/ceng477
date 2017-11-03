@@ -1,9 +1,9 @@
 #include "parser.h"
-#include "tinyxml2.h"
 #include <sstream>
 #include <stdexcept>
+#include "tinyxml2.h"
 
-void parser::Scene::loadFromXml(const std::string &filepath) {
+void parser::Scene::loadFromXml(const std::string& filepath) {
   tinyxml2::XMLDocument file;
   std::stringstream stream;
 
@@ -153,12 +153,13 @@ void parser::Scene::loadFromXml(const std::string &filepath) {
       face.v0_id--;
       face.v1_id--;
       face.v2_id--;
+      face.material_id = mesh.material_id;
       face.CalculateNormal(vertex_data);
-      mesh.faces.push_back(face);
+      mesh.faces.push_back(std::move(face));
     }
     stream.clear();
 
-    meshes.push_back(mesh);
+    meshes.push_back(std::move(mesh));
     mesh.faces.clear();
     element = element->NextSiblingElement("Mesh");
   }
@@ -182,9 +183,10 @@ void parser::Scene::loadFromXml(const std::string &filepath) {
     triangle.indices.v0_id--;
     triangle.indices.v1_id--;
     triangle.indices.v2_id--;
+    triangle.indices.material_id = triangle.material_id;
     triangle.indices.CalculateNormal(vertex_data);
 
-    triangles.push_back(triangle);
+    triangles.push_back(std::move(triangle));
     element = element->NextSiblingElement("Triangle");
   }
 
@@ -207,7 +209,7 @@ void parser::Scene::loadFromXml(const std::string &filepath) {
     stream << child->GetText() << std::endl;
     stream >> sphere.radius;
 
-    spheres.push_back(sphere);
+    spheres.push_back(std::move(sphere));
     element = element->NextSiblingElement("Sphere");
   }
 }
