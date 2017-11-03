@@ -1,5 +1,6 @@
 *.swp
 *.ppm
 main
+raytracer
 *.dSYM
 perf.*
