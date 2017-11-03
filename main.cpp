@@ -20,7 +20,6 @@ int main(int argc, char *argv[]) {
     }
     else
     { 
-        std::cout<<number_of_cores<<std::endl;
         std::thread* threads = new std::thread[number_of_cores];
         const int height_increase = height/number_of_cores; 
         for(int i = 0; i < number_of_cores; i++)
