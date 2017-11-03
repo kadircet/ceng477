@@ -11,12 +11,12 @@ bool NotZero(const Vec3f vec) { return vec.x != 0 || vec.y != 0 || vec.z != 0; }
 
 }  // namespace
 
-Vec3f SceneRenderer::CalculateS(int i, int j) {
+const Vec3f SceneRenderer::CalculateS(int i, int j) const {
   return q + usu * (i + .5) - vsv * (j + .5);
 }
 
-Vec3f SceneRenderer::TraceRay(const Ray& ray, int depth,
-                              const Object* hit_obj = nullptr) {
+const Vec3f SceneRenderer::TraceRay(const Ray& ray, int depth,
+                              const Object* hit_obj = nullptr) const {
   Vec3f color = scene_.background_color;
   const HitRecord hit_record =
       bounding_volume_hierarchy->GetIntersection(ray, hit_obj);
@@ -70,38 +70,20 @@ Vec3f SceneRenderer::TraceRay(const Ray& ray, int depth,
   return color;
 }
 
-Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera& camera) {
+const Vec3i SceneRenderer::RenderPixel(int i, int j, const Camera& camera) const {
   const Vec3f origin = camera.position;
   const Vec3f direction = (CalculateS(i, j) - origin).Normalized();
   const Ray ray{origin, direction, false};
   return SceneRenderer::TraceRay(ray, scene_.max_recursion_depth).ToVec3i();
 }
 
-Vec3i* SceneRenderer::RenderImage(const Camera& camera) {
-  const int width = camera.image_width;
-  const int height = camera.image_height;
-  Vec3i* result = new Vec3i[width * height];
-  const Vec4f view_plane = camera.near_plane;
-  const Vec3f gaze = camera.gaze.Normalized();
-  const float dist = camera.near_distance;
-  const float l = view_plane.x;
-  const float r = view_plane.y;
-  const float b = view_plane.z;
-  const float t = view_plane.w;
-  const Vec3f u = gaze.CrossProduct(camera.up).Normalized();
-  const Vec3f v = u.CrossProduct(gaze);
-  const Vec3f m = camera.position + gaze * dist;
-  q = m + u * l + v * t;
-  usu = u * (r - l) / camera.image_width;
-  vsv = v * (t - b) / camera.image_height;
-
-  for (int j = 0; j < height; j++) {
+void SceneRenderer::RenderImage(const Camera& camera, Vec3i* result,
+                                const int min_height, const int max_height, const int width) const{
+  for (int j = min_height; j < max_height; j++) {
     for (int i = 0; i < width; i++) {
       result[j * width + i] = RenderPixel(i, j, camera);
     }
   }
-
-  return result;
 }
 
 SceneRenderer::SceneRenderer(const char* scene_path) {
@@ -118,4 +100,20 @@ SceneRenderer::SceneRenderer(const char* scene_path) {
     }
   }
   bounding_volume_hierarchy = new BoundingVolumeHierarchy(&objects_);
+}
+
+void SceneRenderer::SetUpScene(const Camera& camera) {
+  const Vec4f view_plane = camera.near_plane;
+  const Vec3f gaze = camera.gaze.Normalized();
+  const float dist = camera.near_distance;
+  const float l = view_plane.x;
+  const float r = view_plane.y;
+  const float b = view_plane.z;
+  const float t = view_plane.w;
+  const Vec3f u = gaze.CrossProduct(camera.up).Normalized();
+  const Vec3f v = u.CrossProduct(gaze);
+  const Vec3f m = camera.position + gaze * dist;
+  q = m + u * l + v * t;
+  usu = u * (r - l) / camera.image_width;
+  vsv = v * (t - b) / camera.image_height;
 }
