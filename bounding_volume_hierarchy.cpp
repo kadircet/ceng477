@@ -117,6 +117,9 @@ void BoundingVolumeHierarchy::GetIntersection(const Ray& ray, Node* cur,
     if (t_right < tmin) {
       GetIntersection(ray, cur->right, tmax, tmin, hit_obj);
     }
+    if (t_left < tmin) {
+      GetIntersection(ray, cur->left, tmax, tmin, hit_obj);
+    }
   } else {
     if (t_right < tmin) {
       GetIntersection(ray, cur->right, tmax, tmin, hit_obj);
