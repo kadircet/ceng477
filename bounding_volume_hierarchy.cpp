@@ -114,11 +114,11 @@ void BoundingVolumeHierarchy::GetIntersection(const Ray& ray, Node* cur,
     t_right = bounding_box.DoesIntersect(ray);
   }
   if (t_left < t_right) {
-    if (t_right < tmin) {
-      GetIntersection(ray, cur->right, tmax, tmin, hit_obj);
-    }
     if (t_left < tmin) {
       GetIntersection(ray, cur->left, tmax, tmin, hit_obj);
+    }
+    if (t_right < tmin) {
+      GetIntersection(ray, cur->right, tmax, tmin, hit_obj);
     }
   } else {
     if (t_right < tmin) {
