@@ -127,6 +127,11 @@ struct Material;
 struct Mesh;
 struct Triangle;
 struct Sphere;
+struct Texture;
+struct Scaling;
+struct Translation;
+struct Rotation;
+struct MeshInstance;
 
 struct Scene {
   // Data
@@ -139,8 +144,14 @@ struct Scene {
   std::vector<Material> materials;
   std::vector<Vec3f> vertex_data;
   std::vector<Mesh> meshes;
+  std::vector<MeshInstance> mesh_instances;
   std::vector<Triangle> triangles;
   std::vector<Sphere> spheres;
+  std::vector<Texture> textures;
+  std::vector<Scaling> scalings;
+  std::vector<Translation> translations;
+  std::vector<Rotation> rotations;
+  std::vector<Vec3f> tex_coord_data;
 
   // Functions
   void loadFromXml(const std::string& filepath);

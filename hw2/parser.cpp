@@ -110,15 +110,12 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
     stream << child->GetText() << std::endl;
     child = element->FirstChildElement("SpecularReflectance");
     stream << child->GetText() << std::endl;
-    child = element->FirstChildElement("MirrorReflectance");
-    stream << child->GetText() << std::endl;
     child = element->FirstChildElement("PhongExponent");
     stream << child->GetText() << std::endl;
 
     stream >> material.ambient.x >> material.ambient.y >> material.ambient.z;
     stream >> material.diffuse.x >> material.diffuse.y >> material.diffuse.z;
     stream >> material.specular.x >> material.specular.y >> material.specular.z;
-    stream >> material.mirror.x >> material.mirror.y >> material.mirror.z;
     stream >> material.phong_exponent;
 
     materials.push_back(material);
@@ -145,6 +142,28 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
     stream >> mesh.material_id;
     mesh.material_id--;
 
+    child = element->FirstChildElement("Texture");
+    if (child != nullptr) {
+      stream << child->GetText() << std::endl;
+      stream >> mesh.texture_id;
+      mesh.texture_id--;
+    }
+
+    child = element->FirstChildElement("Transformations");
+    if (child != nullptr) {
+      char type;
+      Transformation transformation;
+      stream.clear();
+      stream << child->GetText() << std::endl;
+      while (!(stream >> type).eof()) {
+        stream >> transformation.index;
+        transformation.index--;
+        transformation.transformation_type = Transformation::GetType(type);
+
+        mesh.transformations.push_back(transformation);
+      }
+    }
+
     child = element->FirstChildElement("Faces");
     stream << child->GetText() << std::endl;
     Face face;
@@ -166,6 +185,48 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
   }
   stream.clear();
 
+  // Get MesheInstances
+  element = root->FirstChildElement("Objects");
+  element = element->FirstChildElement("MeshInstance");
+  MeshInstance mesh_instance;
+  while (element) {
+    mesh_instance.base_mesh_id = element->IntAttribute("baseMeshId") - 1;
+    mesh_instance.texture_id = meshes[mesh_instance.base_mesh_id].texture_id;
+    mesh_instance.material_id = meshes[mesh_instance.base_mesh_id].material_id;
+    std::cout << "BaseMEshId: " << mesh_instance.base_mesh_id << std::endl;
+
+    child = element->FirstChildElement("Material");
+    stream << child->GetText() << std::endl;
+    stream >> mesh_instance.material_id;
+    mesh_instance.material_id--;
+
+    child = element->FirstChildElement("Texture");
+    if (child != nullptr) {
+      stream << child->GetText() << std::endl;
+      stream >> mesh_instance.texture_id;
+      mesh_instance.texture_id--;
+    }
+
+    child = element->FirstChildElement("Transformations");
+    if (child != nullptr) {
+      char type;
+      Transformation transformation;
+      stream.clear();
+      stream << child->GetText() << std::endl;
+      while (!(stream >> type).eof()) {
+        stream >> transformation.index;
+        transformation.index--;
+        transformation.transformation_type = Transformation::GetType(type);
+
+        mesh_instance.transformations.push_back(transformation);
+      }
+    }
+
+    mesh_instances.push_back(std::move(mesh_instance));
+    element = element->NextSiblingElement("MeshInstance");
+  }
+  stream.clear();
+
   // Get Triangles
   element = root->FirstChildElement("Objects");
   element = element->FirstChildElement("Triangle");
@@ -175,6 +236,28 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
     stream << child->GetText() << std::endl;
     stream >> triangle.material_id;
     triangle.material_id--;
+
+    child = element->FirstChildElement("Texture");
+    if (child != nullptr) {
+      stream << child->GetText() << std::endl;
+      stream >> triangle.texture_id;
+      triangle.texture_id--;
+    }
+
+    child = element->FirstChildElement("Transformations");
+    if (child != nullptr) {
+      char type;
+      Transformation transformation;
+      stream.clear();
+      stream << child->GetText() << std::endl;
+      while (!(stream >> type).eof()) {
+        stream >> transformation.index;
+        transformation.index--;
+        transformation.transformation_type = Transformation::GetType(type);
+
+        triangle.transformations.push_back(transformation);
+      }
+    }
 
     child = element->FirstChildElement("Indices");
     stream << child->GetText() << std::endl;
@@ -201,6 +284,28 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
     stream >> sphere.material_id;
     sphere.material_id--;
 
+    child = element->FirstChildElement("Texture");
+    if (child != nullptr) {
+      stream << child->GetText() << std::endl;
+      stream >> sphere.texture_id;
+      sphere.texture_id--;
+    }
+
+    child = element->FirstChildElement("Transformations");
+    if (child != nullptr) {
+      char type;
+      Transformation transformation;
+      stream.clear();
+      stream << child->GetText() << std::endl;
+      while (!(stream >> type).eof()) {
+        stream >> transformation.index;
+        transformation.index--;
+        transformation.transformation_type = Transformation::GetType(type);
+
+        sphere.transformations.push_back(transformation);
+      }
+    }
+
     child = element->FirstChildElement("Center");
     stream << child->GetText() << std::endl;
     int center;
@@ -214,5 +319,79 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
 
     spheres.push_back(std::move(sphere));
     element = element->NextSiblingElement("Sphere");
+  }
+
+  // Get Textures
+  element = root->FirstChildElement("Textures");
+  if (element) {
+    element = element->FirstChildElement("Texture");
+    Texture texture;
+    while (element) {
+      child = element->FirstChildElement("ImageName");
+      texture.image_name = child->GetText();
+      child = element->FirstChildElement("Interpolation");
+      texture.interpolation_type =
+          Texture::ToInterpolationType(child->GetText());
+      child = element->FirstChildElement("DecalMode");
+      texture.decal_mode = Texture::ToDecalMode(child->GetText());
+      child = element->FirstChildElement("Appearance");
+      texture.appearance = Texture::ToApperance(child->GetText());
+
+      textures.push_back(texture);
+      element = element->NextSiblingElement("Texture");
+    }
+  }
+
+  // Get Transformations
+  element = root->FirstChildElement("Transformations");
+  if (element) {
+    // Get Scalings
+    child = element->FirstChildElement("Scaling");
+    if (child) {
+      Scaling scaling;
+      while (child) {
+        stream << child->GetText() << std::endl;
+        stream >> scaling.x >> scaling.y >> scaling.z;
+
+        scalings.push_back(scaling);
+        child = child->NextSiblingElement("Scaling");
+      }
+    }
+
+    // Get Translations
+    child = element->FirstChildElement("Translation");
+    if (child) {
+      Translation translation;
+      while (child) {
+        stream << child->GetText() << std::endl;
+        stream >> translation.x >> translation.y >> translation.z;
+
+        translations.push_back(translation);
+        child = child->NextSiblingElement("Translation");
+      }
+    }
+
+    // Get Rotations
+    child = element->FirstChildElement("Rotation");
+    if (child) {
+      Rotation rotation;
+      while (child) {
+        stream << child->GetText() << std::endl;
+        stream >> rotation.angle >> rotation.x >> rotation.y >> rotation.z;
+
+        rotations.push_back(rotation);
+        child = child->NextSiblingElement("Rotation");
+      }
+    }
+  }
+
+  // Get TexCoordData
+  element = root->FirstChildElement("TexCoordData");
+  if (element) {
+    stream << element->GetText() << std::endl;
+    while (!(stream >> vertex.x).eof()) {
+      stream >> vertex.y >> vertex.z;
+      tex_coord_data.push_back(vertex);
+    }
   }
 }

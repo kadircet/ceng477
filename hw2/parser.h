@@ -18,6 +18,67 @@ float Determinant(Vec3f a, Vec3f b, Vec3f c) {
 }
 }  // namespace
 
+struct Transformation {
+  enum TransformationType {
+    SCALING,
+    TRANSLATION,
+    ROTATION,
+  };
+  TransformationType transformation_type;
+  int index;
+
+  static TransformationType GetType(char c) {
+    std::cout << "Read transformation of type: " << c << std::endl;
+    if (c == 's') return SCALING;
+    return c == 't' ? TRANSLATION : ROTATION;
+  }
+};
+
+struct Scaling : Transformation {
+  float x, y, z;
+};
+
+struct Translation : Transformation {
+  float x, y, z;
+};
+
+struct Rotation : Transformation {
+  float angle, x, y, z;
+};
+
+struct Texture {
+  enum InterpolationType {
+    NEAREST,
+    BILINEAR,
+  };
+  enum DecalMode {
+    REPLACE_KD,
+    BLEND_KD,
+    REPLACE_ALL,
+  };
+  enum Appearance {
+    REPEAT,
+    CLAMP,
+  };
+  std::string image_name;
+  InterpolationType interpolation_type;
+  DecalMode decal_mode;
+  Appearance appearance;
+
+  static InterpolationType ToInterpolationType(const std::string& str) {
+    return str == "nearest" ? NEAREST : BILINEAR;
+  }
+
+  static DecalMode ToDecalMode(const std::string& str) {
+    if (str == "replace_kd") return REPLACE_KD;
+    return str == "blend_kd" ? BLEND_KD : REPLACE_ALL;
+  }
+
+  static Appearance ToApperance(const std::string& str) {
+    return str == "repeat" ? REPEAT : CLAMP;
+  }
+};
+
 struct Camera {
   Vec3f position;
   Vec3f gaze;
@@ -114,16 +175,29 @@ struct Face : Object {
 
 struct Mesh {
   int material_id;
+  int texture_id;
+  std::vector<Transformation> transformations;
   std::vector<Face> faces;
+};
+
+struct MeshInstance {
+  int material_id;
+  int texture_id;
+  int base_mesh_id;
+  std::vector<Transformation> transformations;
 };
 
 struct Triangle {
   int material_id;
+  int texture_id;
+  std::vector<Transformation> transformations;
   Face indices;
 };
 
 struct Sphere : Object {
   int material_id;
+  int texture_id;
+  std::vector<Transformation> transformations;
   Vec3f center_of_sphere;
   float radius;
 
