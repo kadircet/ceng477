@@ -197,6 +197,28 @@ struct Matrix {
     return trans;
   }
 
+  Vec3f MultiplyVector(const Vec3f& rhs) {
+    Vec3f res;
+    for (int i = 0; i < 3; i++) {
+      res[i] = 0;
+      for (int j = 0; j < 3; j++) {
+        res[i] += elems[i][j] * rhs[j];
+      }
+    }
+    return res;
+  }
+
+  Vec3f MultiplyVector(const Vec3f& rhs) const {
+    Vec3f res;
+    for (int i = 0; i < 3; i++) {
+      res[i] = 0;
+      for (int j = 0; j < 3; j++) {
+        res[i] += elems[i][j] * rhs[j];
+      }
+    }
+    return res;
+  }
+
   Vec3f operator*(const Vec3f& rhs) const {
     Vec3f res;
     for (int i = 0; i < 3; i++) {

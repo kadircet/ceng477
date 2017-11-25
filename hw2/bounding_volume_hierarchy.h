@@ -8,10 +8,10 @@ struct Ray {
   parser::Vec3f direction;
   bool is_shadow;
 
-  Ray Transform(parser::Matrix m) const {
+  Ray Transform(const parser::Matrix& m) const {
     Ray r;
     r.origin = m * origin;
-    r.direction = (m * direction).Normalized();
+    r.direction = m.MultiplyVector(direction).Normalized();
     return r;
   }
 };
