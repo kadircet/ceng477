@@ -157,7 +157,7 @@ bool BoundingVolumeHierarchy::GetIntersection(const Ray& ray, float tmax,
                                               const Object* hit_obj) const {
   float tmin = kInf;
   const BoundingBox bounding_box = tree_->bounding_box;
-  /*for (const Sphere sphere : *spheres_) {
+  for (const Sphere sphere : *spheres_) {
     const Ray ray_transformed = ray.Transform(sphere.inverse_transformation);
     if (sphere.GetBoundingBox().DoesIntersect(ray_transformed) < tmax) {
       const HitRecord hit_record = sphere.GetIntersection(ray_transformed);
@@ -166,7 +166,7 @@ bool BoundingVolumeHierarchy::GetIntersection(const Ray& ray, float tmax,
         return true;
       }
     }
-  }*/
+  }
   const float t = bounding_box.DoesIntersect(ray);
   if (t < kInf) GetIntersection(ray, tree_, tmax, tmin, hit_obj);
   return tmin < tmax + kEpsilon && tmin > .0;
