@@ -93,9 +93,9 @@ SceneRenderer::SceneRenderer(const char* scene_path) {
   for (Triangle& obj : scene_.triangles) {
     objects_.push_back(&obj.indices);
   }
-  for (Sphere& obj : scene_.spheres) {
+  /*for (Sphere& obj : scene_.spheres) {
     objects_.push_back(&obj);
-  }
+  }*/
   for (Mesh& mesh : scene_.meshes) {
     for (Face& obj : mesh.faces) {
       objects_.push_back(&obj);
@@ -104,7 +104,8 @@ SceneRenderer::SceneRenderer(const char* scene_path) {
   /*for (const Object* obj : objects_) {
     obj->GetBoundingBox().min_corner.Print();
   }*/
-  bounding_volume_hierarchy = new BoundingVolumeHierarchy(&objects_);
+  bounding_volume_hierarchy =
+      new BoundingVolumeHierarchy(&objects_, &scene_.spheres);
 }
 
 void SceneRenderer::SetUpScene(const Camera& camera) {

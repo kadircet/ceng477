@@ -7,6 +7,13 @@ struct Ray {
   parser::Vec3f origin;
   parser::Vec3f direction;
   bool is_shadow;
+
+  Ray Transform(parser::Matrix m) const {
+    Ray r;
+    r.origin = m * origin;
+    r.direction = (m * direction).Normalized();
+    return r;
+  }
 };
 
 class Object;
@@ -15,6 +22,7 @@ struct HitRecord {
   int material_id;
   float t;
   parser::Vec3f normal;
+  parser::Vec3f intersection_point;
   const Object* obj;
 };
 
@@ -52,9 +60,14 @@ struct Node {
   int end;
 };
 
+namespace parser {
+struct Sphere;
+}
+
 class BoundingVolumeHierarchy {
  public:
-  BoundingVolumeHierarchy(std::vector<Object*>* objects);
+  BoundingVolumeHierarchy(std::vector<Object*>* objects,
+                          std::vector<parser::Sphere>* spheres);
   HitRecord GetIntersection(const Ray& ray, const Object* hit_obj) const;
   bool GetIntersection(const Ray& ray, float tmax, const Object* hit_obj) const;
 
@@ -66,6 +79,7 @@ class BoundingVolumeHierarchy {
                        const Object* hit_obj) const;
 
   std::vector<Object*>* objects_;
+  std::vector<parser::Sphere>* spheres_;
   Node* tree_;
 };
 

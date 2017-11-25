@@ -18,72 +18,6 @@ float Determinant(Vec3f a, Vec3f b, Vec3f c) {
 }
 }  // namespace
 
-struct Matrix {
-  float elems[4][4];
-
-  float* operator[](int idx) { return elems[idx]; }
-  const float* operator[](int idx) const { return elems[idx]; }
-
-  Matrix Transpose() {
-    Matrix trans;
-    for (int i = 0; i < 4; i++) {
-      for (int j = 0; j < 4; j++) {
-        trans[i][j] = elems[j][i];
-      }
-    }
-    return trans;
-  }
-
-  Vec3f operator*(const Vec3f& rhs) {
-    Vec3f res;
-    for (int i = 0; i < 3; i++) {
-      res[i] = elems[i][3];
-      for (int j = 0; j < 3; j++) {
-        res[i] += elems[i][j] * rhs[j];
-      }
-    }
-    return res;
-  }
-
-  Matrix operator*(const Matrix& rhs) {
-    Matrix res;
-    for (int i = 0; i < 4; i++) {
-      for (int j = 0; j < 4; j++) {
-        for (int k = 0; k < 4; k++) {
-          res[i][j] += elems[i][k] * rhs[k][j];
-        }
-      }
-    }
-    return res;
-  }
-
-  Matrix& operator*=(const Matrix& rhs) {
-    float res[4][4];
-    for (int i = 0; i < 4; i++) {
-      for (int j = 0; j < 4; j++) {
-        res[i][j] = 0;
-        for (int k = 0; k < 4; k++) {
-          res[i][j] += elems[i][k] * rhs[k][j];
-        }
-      }
-    }
-    for (int i = 0; i < 4; i++) {
-      for (int j = 0; j < 4; j++) {
-        elems[i][j] = res[i][j];
-      }
-    }
-    return *this;
-  }
-
-  void MakeIdentity() {
-    for (int i = 0; i < 4; i++) {
-      for (int j = 0; j < 4; j++) {
-        elems[i][j] = i == j;
-      }
-    }
-  }
-};  // namespace parser
-
 struct Transformation {
   enum TransformationType {
     SCALING,
@@ -119,10 +53,10 @@ struct Translation : Transformation {
 
   Matrix ToMatrix() {
     Matrix mat;
+    mat.MakeIdentity();
     mat[0][3] = x;
     mat[1][3] = y;
     mat[2][3] = z;
-    mat[3][3] = 1;
 
     return mat;
   }
@@ -153,7 +87,7 @@ struct Rotation : Transformation {
     rot[1][1] = cos(angle);
     rot[1][2] = -sin(angle);
     rot[2][1] = -rot[1][2];
-    rot[2][2] = rot[1][2];
+    rot[2][2] = rot[1][1];
     rot[3][3] = 1;
 
     return M.Transpose() * (rot * M);
@@ -311,6 +245,8 @@ struct Sphere : Object {
   int material_id;
   int texture_id;
   Matrix transformation;
+  Matrix inverse_transformation;
+  Matrix inverse_transformation_transpose;
   Vec3f center_of_sphere;
   float radius;
 
@@ -341,7 +277,9 @@ struct Sphere : Object {
       hit_record.t = fmin(t1, t2);
     }
     hit_record.material_id = material_id;
-    hit_record.normal = GetNormal(hit_record.t, ray);
+    hit_record.intersection_point = ray.origin + ray.direction * hit_record.t;
+    hit_record.normal =
+        (hit_record.intersection_point - center_of_sphere).Normalized();
     hit_record.obj = this;
     return hit_record;
   }

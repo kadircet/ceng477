@@ -1,4 +1,5 @@
-#include "bounding_volume_hierarchy.h"
+#include "parser.h"
+using parser::Sphere;
 using parser::Vec3f;
 
 void BoundingBox::Expand(const BoundingBox& bounding_box) {
@@ -135,6 +136,19 @@ HitRecord BoundingVolumeHierarchy::GetIntersection(
   HitRecord hit_record;
   hit_record.t = kInf;
   hit_record.material_id = -1;
+  for (const Sphere sphere : *spheres_) {
+    const Ray ray_transformed = ray.Transform(sphere.inverse_transformation);
+    if (sphere.GetBoundingBox().DoesIntersect(ray_transformed) < hit_record.t) {
+      const HitRecord hit_record_sp = sphere.GetIntersection(ray_transformed);
+      if (hit_record_sp.t < hit_record.t && hit_record_sp.t > .0) {
+        hit_record = hit_record_sp;
+        hit_record.normal =
+            sphere.inverse_transformation_transpose * hit_record_sp.normal;
+        hit_record.intersection_point =
+            sphere.transformation * hit_record_sp.intersection_point;
+      }
+    }
+  }
   const BoundingBox bounding_box = tree_->bounding_box;
   const float t = bounding_box.DoesIntersect(ray);
   if (t < kInf) GetIntersection(ray, tree_, hit_record, hit_obj);
@@ -145,6 +159,16 @@ bool BoundingVolumeHierarchy::GetIntersection(const Ray& ray, float tmax,
                                               const Object* hit_obj) const {
   float tmin = kInf;
   const BoundingBox bounding_box = tree_->bounding_box;
+  /*for (const Sphere sphere : *spheres_) {
+    const Ray ray_transformed = ray.Transform(sphere.inverse_transformation);
+    if (sphere.GetBoundingBox().DoesIntersect(ray_transformed) < tmax) {
+      const HitRecord hit_record = sphere.GetIntersection(ray_transformed);
+      if (hit_record.t < tmax + kEpsilon && hit_record.t > .0) {
+        hit_obj = hit_record.obj;
+        return true;
+      }
+    }
+  }*/
   const float t = bounding_box.DoesIntersect(ray);
   if (t < kInf) GetIntersection(ray, tree_, tmax, tmin, hit_obj);
   return tmin < tmax + kEpsilon && tmin > .0;
@@ -185,8 +209,9 @@ void BoundingVolumeHierarchy::build(Node* cur, int left, int right) {
   }
 }
 
-BoundingVolumeHierarchy::BoundingVolumeHierarchy(std::vector<Object*>* objects)
-    : objects_(objects) {
+BoundingVolumeHierarchy::BoundingVolumeHierarchy(std::vector<Object*>* objects,
+                                                 std::vector<Sphere>* spheres)
+    : objects_(objects), spheres_(spheres) {
   tree_ = new Node;
   build(tree_, 0, objects_->size());
 }

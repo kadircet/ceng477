@@ -167,6 +167,86 @@ struct Scene {
   void loadFromXml(const std::string& filepath);
 };
 
+struct Matrix {
+  float elems[4][4];
+
+  float* operator[](int idx) { return elems[idx]; }
+  const float* operator[](int idx) const { return elems[idx]; }
+
+  Matrix() {
+    for (int i = 0; i < 4; i++)
+      for (int j = 0; j < 4; j++) elems[i][j] = 0.;
+  }
+
+  void Print() {
+    for (int i = 0; i < 4; i++) {
+      for (int j = 0; j < 4; j++) {
+        std::cout << elems[i][j] << ' ';
+      }
+      std::cout << std::endl;
+    }
+  }
+
+  Matrix Transpose() {
+    Matrix trans;
+    for (int i = 0; i < 4; i++) {
+      for (int j = 0; j < 4; j++) {
+        trans[i][j] = elems[j][i];
+      }
+    }
+    return trans;
+  }
+
+  Vec3f operator*(const Vec3f& rhs) const {
+    Vec3f res;
+    for (int i = 0; i < 3; i++) {
+      res[i] = elems[i][3];
+      for (int j = 0; j < 3; j++) {
+        res[i] += elems[i][j] * rhs[j];
+      }
+    }
+    return res;
+  }
+
+  Matrix operator*(const Matrix& rhs) {
+    Matrix res;
+    for (int i = 0; i < 4; i++) {
+      for (int j = 0; j < 4; j++) {
+        for (int k = 0; k < 4; k++) {
+          res[i][j] += elems[i][k] * rhs[k][j];
+        }
+      }
+    }
+    return res;
+  }
+
+  Matrix& operator*=(const Matrix& rhs) {
+    float res[4][4];
+    for (int i = 0; i < 4; i++) {
+      for (int j = 0; j < 4; j++) {
+        res[i][j] = 0;
+        for (int k = 0; k < 4; k++) {
+          res[i][j] += elems[i][k] * rhs[k][j];
+        }
+      }
+    }
+    for (int i = 0; i < 4; i++) {
+      for (int j = 0; j < 4; j++) {
+        elems[i][j] = res[i][j];
+      }
+    }
+    return *this;
+  }
+
+  void MakeIdentity() {
+    for (int i = 0; i < 4; i++) {
+      for (int j = 0; j < 4; j++) {
+        elems[i][j] = i == j ? 1. : .0;
+      }
+    }
+  }
+};
+
 }  // namespace parser
 
 #endif

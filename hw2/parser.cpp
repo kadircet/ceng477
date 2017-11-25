@@ -1,6 +1,7 @@
 #include "parser.h"
 #include <sstream>
 #include <stdexcept>
+#include "matrixInverse.h"
 #include "tinyxml2.h"
 
 void parser::Scene::loadFromXml(const std::string& filepath) {
@@ -168,6 +169,7 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
       while (child) {
         stream << child->GetText() << std::endl;
         stream >> rotation.angle >> rotation.x >> rotation.y >> rotation.z;
+        rotation.angle *= M_PI / 180.;
 
         rotations.push_back(rotation);
         child = child->NextSiblingElement("Rotation");
@@ -379,6 +381,7 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
 
     child = element->FirstChildElement("Transformations");
     sphere.transformation.MakeIdentity();
+    sphere.inverse_transformation.MakeIdentity();
     if (child != nullptr) {
       char type;
       int index;
@@ -387,6 +390,7 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
       while (!(stream >> type).eof()) {
         stream >> index;
         index--;
+        std::cout << type << ' ' << index << std::endl;
 
         switch (type) {
           case 's':
@@ -401,6 +405,16 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
         }
       }
       stream.clear();
+      double trans[16];
+      double inv_trans[16];
+      for (int i = 0; i < 16; i++) {
+        trans[i] = sphere.transformation[i / 4][i % 4];
+      }
+      invert(trans, inv_trans);
+      for (int i = 0; i < 16; i++) {
+        sphere.inverse_transformation[i / 4][i % 4] = inv_trans[i];
+        sphere.inverse_transformation_transpose[i % 4][i / 4] = inv_trans[i];
+      }
     }
 
     child = element->FirstChildElement("Center");
