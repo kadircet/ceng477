@@ -162,6 +162,7 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
 
         mesh.transformations.push_back(transformation);
       }
+      stream.clear();
     }
 
     child = element->FirstChildElement("Faces");
@@ -185,7 +186,7 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
   }
   stream.clear();
 
-  // Get MesheInstances
+  // Get MeshInstances
   element = root->FirstChildElement("Objects");
   element = element->FirstChildElement("MeshInstance");
   MeshInstance mesh_instance;
@@ -193,7 +194,6 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
     mesh_instance.base_mesh_id = element->IntAttribute("baseMeshId") - 1;
     mesh_instance.texture_id = meshes[mesh_instance.base_mesh_id].texture_id;
     mesh_instance.material_id = meshes[mesh_instance.base_mesh_id].material_id;
-    std::cout << "BaseMEshId: " << mesh_instance.base_mesh_id << std::endl;
 
     child = element->FirstChildElement("Material");
     stream << child->GetText() << std::endl;
@@ -220,6 +220,7 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
 
         mesh_instance.transformations.push_back(transformation);
       }
+      stream.clear();
     }
 
     mesh_instances.push_back(std::move(mesh_instance));
@@ -257,6 +258,7 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
 
         triangle.transformations.push_back(transformation);
       }
+      stream.clear();
     }
 
     child = element->FirstChildElement("Indices");
@@ -304,6 +306,7 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
 
         sphere.transformations.push_back(transformation);
       }
+      stream.clear();
     }
 
     child = element->FirstChildElement("Center");
