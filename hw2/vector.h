@@ -157,7 +157,7 @@ struct Scene {
   std::vector<MeshInstance> mesh_instances;
   std::vector<Triangle> triangles;
   std::vector<Sphere> spheres;
-  std::vector<Texture> textures;
+  std::vector<Texture*> textures;
   std::vector<Scaling> scalings;
   std::vector<Translation> translations;
   std::vector<Rotation> rotations;

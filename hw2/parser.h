@@ -1,11 +1,13 @@
 #ifndef __HW1__PARSER__
 #define __HW1__PARSER__
 
+#include <cmath>
 #include <limits>
 #include <memory>
 #include <string>
 #include <vector>
 #include "bounding_volume_hierarchy.h"
+#include "jpeg.h"
 #include "vector.h"
 
 namespace parser {
@@ -109,6 +111,7 @@ struct Texture {
     REPEAT,
     CLAMP,
   };
+
   std::string image_name;
   InterpolationType interpolation_type;
   DecalMode decal_mode;
@@ -125,6 +128,65 @@ struct Texture {
 
   static Appearance ToApperance(const std::string& str) {
     return str == "repeat" ? REPEAT : CLAMP;
+  }
+
+  int width;
+  int height;
+  unsigned char* image_data;
+
+  void LoadImage() {
+    read_jpeg_header(image_name.c_str(), width, height);
+
+    image_data = new unsigned char[width * height * 3];
+    read_jpeg(image_name.c_str(), image_data, width, height);
+  }
+
+  //~Texture() { delete image_data; }
+
+  Vec3f Get(float u, float v) const {
+    if (appearance == CLAMP) {
+      u = fmax(0., fmin(1., u));
+      v = fmax(0., fmin(1., v));
+    } else {
+      u -= floor(u);
+      v -= floor(v);
+    }
+    u *= width;
+    if (u >= width) u--;
+    v *= height;
+    if (v >= height) v--;
+    Vec3f color;
+    if (interpolation_type == NEAREST) {
+      const unsigned int pos = ((int)v) * width * 3 + ((int)u) * 3;
+      color.x = image_data[pos];
+      color.y = image_data[pos + 1];
+      color.z = image_data[pos + 2];
+    } else {
+      const unsigned int p = u;
+      const unsigned int q = v;
+      const float dx = u - p;
+      const float dy = v - q;
+      const unsigned int pos = q * width * 3 + p * 3;
+      color.x = image_data[pos] * (1 - dx) * (1 - dy);
+      color.x += image_data[pos + 3] * (dx) * (1 - dy);
+      color.x += image_data[pos + 3 + width * 3] * (dx) * (dy);
+      color.x += image_data[pos + width * 3] * (1 - dx) * (dy);
+
+      color.y = image_data[pos + 1] * (1 - dx) * (1 - dy);
+      color.y += image_data[pos + 3 + 1] * (dx) * (1 - dy);
+      color.y += image_data[pos + 3 + width * 3 + 1] * (dx) * (dy);
+      color.y += image_data[pos + width * 3 + 1] * (1 - dx) * (dy);
+
+      color.z = image_data[pos + 2] * (1 - dx) * (1 - dy);
+      color.z += image_data[pos + 3 + 2] * (dx) * (1 - dy);
+      color.z += image_data[pos + 3 + width * 3 + 2] * (dx) * (dy);
+      color.z += image_data[pos + width * 3 + 2] * (1 - dx) * (dy);
+    }
+
+    if (decal_mode == BLEND_KD || decal_mode == REPLACE_KD) {
+      color /= 255.;
+    }
+    return color;
   }
 };
 
@@ -156,6 +218,7 @@ struct Face : Object {
   Vec3f v1;
   Vec3f v2;
   int material_id;
+  int texture_id;
   Vec3f normal;
 
   void CalculateNormal() {
@@ -209,7 +272,10 @@ struct Face : Object {
       hit_record.t = t;
       hit_record.normal = normal;
       hit_record.material_id = material_id;
+      hit_record.texture_id = texture_id;
       hit_record.obj = this;
+      hit_record.u = 0;
+      hit_record.v = 0;
     }
     return hit_record;
   }
@@ -278,8 +344,12 @@ struct Sphere : Object {
       hit_record.t = fmin(t1, t2);
     }
     hit_record.material_id = material_id;
+    hit_record.texture_id = texture_id;
     hit_record.normal = GetNormal(hit_record.t, ray);
     hit_record.obj = this;
+    hit_record.u =
+        (-atan2(hit_record.normal.z, hit_record.normal.x) + M_PI) / M_PI / 2;
+    hit_record.v = acos(hit_record.normal.y) / M_PI;
     return hit_record;
   }
 

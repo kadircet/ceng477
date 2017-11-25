@@ -188,6 +188,7 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
     stream >> mesh.material_id;
     mesh.material_id--;
 
+    mesh.texture_id = -1;
     child = element->FirstChildElement("Texture");
     if (child != nullptr) {
       stream << child->GetText() << std::endl;
@@ -232,6 +233,7 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
       face.v1 = transformation * vertex_data[v1_id - 1];
       face.v2 = transformation * vertex_data[v2_id - 1];
       face.material_id = mesh.material_id;
+      face.texture_id = mesh.texture_id;
       face.CalculateNormal();
       mesh.faces.push_back(std::move(face));
     }
@@ -294,6 +296,8 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
       face.v0 = transformation * face.v0;
       face.v1 = transformation * face.v1;
       face.v2 = transformation * face.v2;
+      face.texture_id = mesh_instance.texture_id;
+      face.material_id = mesh_instance.material_id;
       face.CalculateNormal();
       mesh_instance.faces.push_back(face);
     }
@@ -313,6 +317,7 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
     stream >> triangle.material_id;
     triangle.material_id--;
 
+    triangle.texture_id = -1;
     child = element->FirstChildElement("Texture");
     if (child != nullptr) {
       stream << child->GetText() << std::endl;
@@ -356,6 +361,7 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
     triangle.indices.v1 = transformation * vertex_data[v1_id - 1];
     triangle.indices.v2 = transformation * vertex_data[v2_id - 1];
     triangle.indices.material_id = triangle.material_id;
+    triangle.indices.texture_id = triangle.texture_id;
     triangle.indices.CalculateNormal();
 
     triangles.push_back(std::move(triangle));
@@ -372,6 +378,7 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
     stream >> sphere.material_id;
     sphere.material_id--;
 
+    sphere.texture_id = -1;
     child = element->FirstChildElement("Texture");
     if (child != nullptr) {
       stream << child->GetText() << std::endl;
@@ -439,17 +446,18 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
   element = root->FirstChildElement("Textures");
   if (element) {
     element = element->FirstChildElement("Texture");
-    Texture texture;
     while (element) {
+      Texture* texture = new Texture;
       child = element->FirstChildElement("ImageName");
-      texture.image_name = child->GetText();
+      texture->image_name = child->GetText();
       child = element->FirstChildElement("Interpolation");
-      texture.interpolation_type =
+      texture->interpolation_type =
           Texture::ToInterpolationType(child->GetText());
       child = element->FirstChildElement("DecalMode");
-      texture.decal_mode = Texture::ToDecalMode(child->GetText());
+      texture->decal_mode = Texture::ToDecalMode(child->GetText());
       child = element->FirstChildElement("Appearance");
-      texture.appearance = Texture::ToApperance(child->GetText());
+      texture->appearance = Texture::ToApperance(child->GetText());
+      texture->LoadImage();
 
       textures.push_back(texture);
       element = element->NextSiblingElement("Texture");

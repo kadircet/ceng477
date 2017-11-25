@@ -16,6 +16,8 @@ class SceneRenderer {
   const parser::Vec3f CalculateS(int i, int j) const;
   const parser::Vec3i RenderPixel(int i, int j,
                                   const parser::Camera& camera) const;
+  const parser::Vec3f GetShadingConstant(int texture_id, float u, float v,
+                                         const parser::Vec3f& kd) const;
 
  public:
   SceneRenderer(const char* scene_path);

@@ -11,6 +11,19 @@ bool NotZero(const Vec3f vec) { return vec.x != 0 || vec.y != 0 || vec.z != 0; }
 
 }  // namespace
 
+const Vec3f SceneRenderer::GetShadingConstant(int texture_id, float u, float v,
+                                              const Vec3f& kd) const {
+  Vec3f res;
+  if (texture_id == -1) return res;
+
+  const Texture texture = *scene_.textures[texture_id];
+  res = texture.Get(u, v);
+  if (texture.decal_mode == Texture::BLEND_KD) {
+    res = (res + kd) / 2;
+  }
+  return res;
+}
+
 const Vec3f SceneRenderer::CalculateS(int i, int j) const {
   return q + usu * (i + .5) - vsv * (j + .5);
 }
@@ -21,6 +34,7 @@ const Vec3f SceneRenderer::TraceRay(const Ray& ray, int depth,
   const HitRecord hit_record =
       bounding_volume_hierarchy->GetIntersection(ray, hit_obj);
   const int material_id = hit_record.material_id;
+  const int texture_id = hit_record.texture_id;
 
   if (material_id != -1) {
     const Vec3f origin = ray.origin;
@@ -29,6 +43,12 @@ const Vec3f SceneRenderer::TraceRay(const Ray& ray, int depth,
     const Vec3f normal = hit_record.normal;
     const Material material = scene_.materials[material_id];
     color = scene_.ambient_light.PointWise(material.ambient);
+    const Vec3f C = GetShadingConstant(texture_id, hit_record.u, hit_record.v,
+                                       material.diffuse);
+    bool is_replace_all =
+        texture_id == -1
+            ? false
+            : scene_.textures[texture_id]->decal_mode == Texture::REPLACE_ALL;
 
     for (const PointLight& light : scene_.point_lights) {
       // Shadow check
@@ -48,7 +68,7 @@ const Vec3f SceneRenderer::TraceRay(const Ray& ray, int depth,
       // Diffuse light
       const float cos_theta = wi_normal * normal;
       const float cos_thetap = cos_theta > 0. ? cos_theta : 0.;
-      color += (material.diffuse * cos_thetap).PointWise(intensity);
+      color += is_replace_all ? C : (C * cos_thetap).PointWise(intensity);
 
       // Specular light
       const Vec3f h = (wi_normal - direction).Normalized();
@@ -101,9 +121,6 @@ SceneRenderer::SceneRenderer(const char* scene_path) {
       objects_.push_back(&obj);
     }
   }
-  /*for (const Object* obj : objects_) {
-    obj->GetBoundingBox().min_corner.Print();
-  }*/
   bounding_volume_hierarchy =
       new BoundingVolumeHierarchy(&objects_, &scene_.spheres);
 }

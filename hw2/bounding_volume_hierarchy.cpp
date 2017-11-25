@@ -162,7 +162,6 @@ bool BoundingVolumeHierarchy::GetIntersection(const Ray& ray, float tmax,
     if (sphere.GetBoundingBox().DoesIntersect(ray_transformed) < tmax) {
       const HitRecord hit_record = sphere.GetIntersection(ray_transformed);
       if (hit_record.t < tmax + kEpsilon && hit_record.t > .0) {
-        hit_obj = hit_record.obj;
         return true;
       }
     }

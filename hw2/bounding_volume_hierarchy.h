@@ -20,7 +20,10 @@ class Object;
 
 struct HitRecord {
   int material_id;
+  int texture_id;
   float t;
+  float u;
+  float v;
   parser::Vec3f normal;
   const Object* obj;
 };

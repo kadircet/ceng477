@@ -16,7 +16,7 @@ int main(int argc, char* argv[]) {
     const int width = camera.image_width;
     const int height = camera.image_height;
     Vec3i* pixels = new Vec3i[width * height];
-    const int number_of_cores = std::thread::hardware_concurrency();
+    const int number_of_cores = 128;
     scene_renderer.SetUpScene(camera);
     if (number_of_cores == 0 || height < number_of_cores) {
       scene_renderer.RenderImage(camera, pixels, 0, height, width);
