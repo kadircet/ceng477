@@ -34,6 +34,17 @@ struct Matrix {
     return trans;
   }
 
+  Vec3f operator*(const Vec3f& rhs) {
+    Vec3f res;
+    for (int i = 0; i < 3; i++) {
+      res[i] = elems[i][3];
+      for (int j = 0; j < 3; j++) {
+        res[i] += elems[i][j] * rhs[j];
+      }
+    }
+    return res;
+  }
+
   Matrix operator*(const Matrix& rhs) {
     Matrix res;
     for (int i = 0; i < 4; i++) {
@@ -71,7 +82,7 @@ struct Matrix {
       }
     }
   }
-};
+};  // namespace parser
 
 struct Transformation {
   enum TransformationType {
@@ -280,7 +291,6 @@ struct Mesh {
   int material_id;
   int texture_id;
 
-  Matrix transformation;
   std::vector<Face> faces;
 };
 
@@ -288,14 +298,13 @@ struct MeshInstance {
   int material_id;
   int texture_id;
   int base_mesh_id;
-  Matrix transformation;
+  std::vector<Face> faces;
 };
 
 struct Triangle {
   int material_id;
   int texture_id;
   Face indices;
-  Matrix transformation;
 };
 
 struct Sphere : Object {

@@ -114,6 +114,16 @@ struct Vec3f {
     return z;
   }
 
+  float& operator[](int idx) {
+    switch (idx) {
+      case 0:
+        return x;
+      case 1:
+        return y;
+    }
+    return z;
+  }
+
   void Print() const { std::cout << x << ' ' << y << ' ' << z << std::endl; }
 };
 

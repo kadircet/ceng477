@@ -194,7 +194,8 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
     }
 
     child = element->FirstChildElement("Transformations");
-    mesh.transformation.MakeIdentity();
+    Matrix transformation;
+    transformation.MakeIdentity();
     if (child != nullptr) {
       char type;
       int index;
@@ -206,13 +207,13 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
 
         switch (type) {
           case 's':
-            mesh.transformation *= scalings[index].ToMatrix();
+            transformation *= scalings[index].ToMatrix();
             break;
           case 't':
-            mesh.transformation *= translations[index].ToMatrix();
+            transformation *= translations[index].ToMatrix();
             break;
           case 'r':
-            mesh.transformation *= rotations[index].ToMatrix();
+            transformation *= rotations[index].ToMatrix();
             break;
         }
       }
@@ -225,9 +226,9 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
     int v0_id, v1_id, v2_id;
     while (!(stream >> v0_id).eof()) {
       stream >> v1_id >> v2_id;
-      face.v0 = vertex_data[v0_id - 1];
-      face.v1 = vertex_data[v1_id - 1];
-      face.v2 = vertex_data[v2_id - 1];
+      face.v0 = transformation * vertex_data[v0_id - 1];
+      face.v1 = transformation * vertex_data[v1_id - 1];
+      face.v2 = transformation * vertex_data[v2_id - 1];
       face.material_id = mesh.material_id;
       face.CalculateNormal();
       mesh.faces.push_back(std::move(face));
@@ -262,8 +263,8 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
     }
 
     child = element->FirstChildElement("Transformations");
-    mesh_instance.transformation =
-        meshes[mesh_instance.base_mesh_id].transformation;
+    Matrix transformation;
+    transformation.MakeIdentity();
     if (child != nullptr) {
       char type;
       int index;
@@ -275,17 +276,24 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
 
         switch (type) {
           case 's':
-            mesh_instance.transformation *= scalings[index].ToMatrix();
+            transformation *= scalings[index].ToMatrix();
             break;
           case 't':
-            mesh_instance.transformation *= translations[index].ToMatrix();
+            transformation *= translations[index].ToMatrix();
             break;
           case 'r':
-            mesh_instance.transformation *= rotations[index].ToMatrix();
+            transformation *= rotations[index].ToMatrix();
             break;
         }
       }
       stream.clear();
+    }
+    for (Face face : meshes[mesh_instance.base_mesh_id].faces) {
+      face.v0 = transformation * face.v0;
+      face.v1 = transformation * face.v1;
+      face.v2 = transformation * face.v2;
+      face.CalculateNormal();
+      mesh_instance.faces.push_back(face);
     }
 
     mesh_instances.push_back(std::move(mesh_instance));
@@ -311,7 +319,8 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
     }
 
     child = element->FirstChildElement("Transformations");
-    triangle.transformation.MakeIdentity();
+    Matrix transformation;
+    transformation.MakeIdentity();
     if (child != nullptr) {
       char type;
       int index;
@@ -323,13 +332,13 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
 
         switch (type) {
           case 's':
-            triangle.transformation *= scalings[index].ToMatrix();
+            transformation *= scalings[index].ToMatrix();
             break;
           case 't':
-            triangle.transformation *= translations[index].ToMatrix();
+            transformation *= translations[index].ToMatrix();
             break;
           case 'r':
-            triangle.transformation *= rotations[index].ToMatrix();
+            transformation *= rotations[index].ToMatrix();
             break;
         }
       }
@@ -341,9 +350,9 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
     int v0_id, v1_id, v2_id;
     stream >> v0_id >> v1_id >> v2_id;
 
-    triangle.indices.v0 = vertex_data[v0_id - 1];
-    triangle.indices.v1 = vertex_data[v1_id - 1];
-    triangle.indices.v2 = vertex_data[v2_id - 1];
+    triangle.indices.v0 = transformation * vertex_data[v0_id - 1];
+    triangle.indices.v1 = transformation * vertex_data[v1_id - 1];
+    triangle.indices.v2 = transformation * vertex_data[v2_id - 1];
     triangle.indices.material_id = triangle.material_id;
     triangle.indices.CalculateNormal();
 
@@ -369,7 +378,7 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
     }
 
     child = element->FirstChildElement("Transformations");
-    triangle.transformation.MakeIdentity();
+    sphere.transformation.MakeIdentity();
     if (child != nullptr) {
       char type;
       int index;
