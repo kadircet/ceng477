@@ -22,7 +22,6 @@ struct HitRecord {
   int material_id;
   float t;
   parser::Vec3f normal;
-  parser::Vec3f intersection_point;
   const Object* obj;
 };
 

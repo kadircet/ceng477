@@ -209,13 +209,13 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
 
         switch (type) {
           case 's':
-            transformation *= scalings[index].ToMatrix();
+            transformation = scalings[index].ToMatrix() * transformation;
             break;
           case 't':
-            transformation *= translations[index].ToMatrix();
+            transformation = translations[index].ToMatrix() * transformation;
             break;
           case 'r':
-            transformation *= rotations[index].ToMatrix();
+            transformation = rotations[index].ToMatrix() * transformation;
             break;
         }
       }
@@ -278,13 +278,13 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
 
         switch (type) {
           case 's':
-            transformation *= scalings[index].ToMatrix();
+            transformation = scalings[index].ToMatrix() * transformation;
             break;
           case 't':
-            transformation *= translations[index].ToMatrix();
+            transformation = translations[index].ToMatrix() * transformation;
             break;
           case 'r':
-            transformation *= rotations[index].ToMatrix();
+            transformation = rotations[index].ToMatrix() * transformation;
             break;
         }
       }
@@ -334,13 +334,13 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
 
         switch (type) {
           case 's':
-            transformation *= scalings[index].ToMatrix();
+            transformation = scalings[index].ToMatrix() * transformation;
             break;
           case 't':
-            transformation *= translations[index].ToMatrix();
+            transformation = translations[index].ToMatrix() * transformation;
             break;
           case 'r':
-            transformation *= rotations[index].ToMatrix();
+            transformation = rotations[index].ToMatrix() * transformation;
             break;
         }
       }
@@ -394,13 +394,16 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
 
         switch (type) {
           case 's':
-            sphere.transformation *= scalings[index].ToMatrix();
+            sphere.transformation =
+                scalings[index].ToMatrix() * sphere.transformation;
             break;
           case 't':
-            sphere.transformation *= translations[index].ToMatrix();
+            sphere.transformation =
+                translations[index].ToMatrix() * sphere.transformation;
             break;
           case 'r':
-            sphere.transformation *= rotations[index].ToMatrix();
+            sphere.transformation =
+                rotations[index].ToMatrix() * sphere.transformation;
             break;
         }
       }

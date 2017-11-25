@@ -67,7 +67,8 @@ struct Rotation : Transformation {
 
   Matrix ToMatrix() {
     const Vec3f u = Vec3f(x, y, z).Normalized();
-    const Vec3f v = Vec3f(-u.y, u.x, .0).Normalized();
+    const Vec3f v = ((x != 0 || y != 0) ? Vec3f(-u.y, u.x, .0) : Vec3f(0, 1, 0))
+                        .Normalized();
     const Vec3f w = u.CrossProduct(v);
 
     Matrix M;
@@ -277,9 +278,7 @@ struct Sphere : Object {
       hit_record.t = fmin(t1, t2);
     }
     hit_record.material_id = material_id;
-    hit_record.intersection_point = ray.origin + ray.direction * hit_record.t;
-    hit_record.normal =
-        (hit_record.intersection_point - center_of_sphere).Normalized();
+    hit_record.normal = GetNormal(hit_record.t, ray);
     hit_record.obj = this;
     return hit_record;
   }

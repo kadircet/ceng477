@@ -144,8 +144,6 @@ HitRecord BoundingVolumeHierarchy::GetIntersection(
         hit_record = hit_record_sp;
         hit_record.normal =
             sphere.inverse_transformation_transpose * hit_record_sp.normal;
-        hit_record.intersection_point =
-            sphere.transformation * hit_record_sp.intersection_point;
       }
     }
   }
