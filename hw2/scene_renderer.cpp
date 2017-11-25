@@ -101,6 +101,9 @@ SceneRenderer::SceneRenderer(const char* scene_path) {
       objects_.push_back(&obj);
     }
   }
+  /*for (const Object* obj : objects_) {
+    obj->GetBoundingBox().min_corner.Print();
+  }*/
   bounding_volume_hierarchy = new BoundingVolumeHierarchy(&objects_);
 }
 

@@ -18,6 +18,61 @@ float Determinant(Vec3f a, Vec3f b, Vec3f c) {
 }
 }  // namespace
 
+struct Matrix {
+  float elems[4][4];
+
+  float* operator[](int idx) { return elems[idx]; }
+  const float* operator[](int idx) const { return elems[idx]; }
+
+  Matrix Transpose() {
+    Matrix trans;
+    for (int i = 0; i < 4; i++) {
+      for (int j = 0; j < 4; j++) {
+        trans[i][j] = elems[j][i];
+      }
+    }
+    return trans;
+  }
+
+  Matrix operator*(const Matrix& rhs) {
+    Matrix res;
+    for (int i = 0; i < 4; i++) {
+      for (int j = 0; j < 4; j++) {
+        for (int k = 0; k < 4; k++) {
+          res[i][j] += elems[i][k] * rhs[k][j];
+        }
+      }
+    }
+    return res;
+  }
+
+  Matrix& operator*=(const Matrix& rhs) {
+    float res[4][4];
+    for (int i = 0; i < 4; i++) {
+      for (int j = 0; j < 4; j++) {
+        res[i][j] = 0;
+        for (int k = 0; k < 4; k++) {
+          res[i][j] += elems[i][k] * rhs[k][j];
+        }
+      }
+    }
+    for (int i = 0; i < 4; i++) {
+      for (int j = 0; j < 4; j++) {
+        elems[i][j] = res[i][j];
+      }
+    }
+    return *this;
+  }
+
+  void MakeIdentity() {
+    for (int i = 0; i < 4; i++) {
+      for (int j = 0; j < 4; j++) {
+        elems[i][j] = i == j;
+      }
+    }
+  }
+};
+
 struct Transformation {
   enum TransformationType {
     SCALING,
@@ -36,14 +91,62 @@ struct Transformation {
 
 struct Scaling : Transformation {
   float x, y, z;
+
+  Matrix ToMatrix() {
+    Matrix mat;
+    mat[0][0] = x;
+    mat[1][1] = y;
+    mat[2][2] = z;
+    mat[3][3] = 1;
+
+    return mat;
+  }
 };
 
 struct Translation : Transformation {
   float x, y, z;
+
+  Matrix ToMatrix() {
+    Matrix mat;
+    mat[0][3] = x;
+    mat[1][3] = y;
+    mat[2][3] = z;
+    mat[3][3] = 1;
+
+    return mat;
+  }
 };
 
 struct Rotation : Transformation {
   float angle, x, y, z;
+
+  Matrix ToMatrix() {
+    const Vec3f u = Vec3f(x, y, z).Normalized();
+    const Vec3f v = Vec3f(-u.y, u.x, .0).Normalized();
+    const Vec3f w = u.CrossProduct(v);
+
+    Matrix M;
+    M[0][0] = u.x;
+    M[0][1] = u.y;
+    M[0][2] = u.z;
+    M[1][0] = v.x;
+    M[1][1] = v.y;
+    M[1][2] = v.z;
+    M[2][0] = w.x;
+    M[2][1] = w.y;
+    M[2][2] = w.z;
+    M[3][3] = 1;
+
+    Matrix rot;
+    rot[0][0] = 1;
+    rot[1][1] = cos(angle);
+    rot[1][2] = -sin(angle);
+    rot[2][1] = -rot[1][2];
+    rot[2][2] = rot[1][2];
+    rot[3][3] = 1;
+
+    return M.Transpose() * (rot * M);
+  }
 };
 
 struct Texture {
@@ -176,7 +279,8 @@ struct Face : Object {
 struct Mesh {
   int material_id;
   int texture_id;
-  std::vector<Transformation> transformations;
+
+  Matrix transformation;
   std::vector<Face> faces;
 };
 
@@ -184,20 +288,20 @@ struct MeshInstance {
   int material_id;
   int texture_id;
   int base_mesh_id;
-  std::vector<Transformation> transformations;
+  Matrix transformation;
 };
 
 struct Triangle {
   int material_id;
   int texture_id;
-  std::vector<Transformation> transformations;
   Face indices;
+  Matrix transformation;
 };
 
 struct Sphere : Object {
   int material_id;
   int texture_id;
-  std::vector<Transformation> transformations;
+  Matrix transformation;
   Vec3f center_of_sphere;
   float radius;
 

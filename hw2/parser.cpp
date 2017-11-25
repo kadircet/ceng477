@@ -132,6 +132,50 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
   }
   stream.clear();
 
+  // Get Transformations
+  element = root->FirstChildElement("Transformations");
+  if (element) {
+    // Get Scalings
+    child = element->FirstChildElement("Scaling");
+    if (child) {
+      Scaling scaling;
+      while (child) {
+        stream << child->GetText() << std::endl;
+        stream >> scaling.x >> scaling.y >> scaling.z;
+
+        scalings.push_back(scaling);
+        child = child->NextSiblingElement("Scaling");
+      }
+    }
+
+    // Get Translations
+    child = element->FirstChildElement("Translation");
+    if (child) {
+      Translation translation;
+      while (child) {
+        stream << child->GetText() << std::endl;
+        stream >> translation.x >> translation.y >> translation.z;
+
+        translations.push_back(translation);
+        child = child->NextSiblingElement("Translation");
+      }
+    }
+
+    // Get Rotations
+    child = element->FirstChildElement("Rotation");
+    if (child) {
+      Rotation rotation;
+      while (child) {
+        stream << child->GetText() << std::endl;
+        stream >> rotation.angle >> rotation.x >> rotation.y >> rotation.z;
+
+        rotations.push_back(rotation);
+        child = child->NextSiblingElement("Rotation");
+      }
+    }
+    stream.clear();
+  }
+
   // Get Meshes
   element = root->FirstChildElement("Objects");
   element = element->FirstChildElement("Mesh");
@@ -150,17 +194,27 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
     }
 
     child = element->FirstChildElement("Transformations");
+    mesh.transformation.MakeIdentity();
     if (child != nullptr) {
       char type;
-      Transformation transformation;
+      int index;
       stream.clear();
       stream << child->GetText() << std::endl;
       while (!(stream >> type).eof()) {
-        stream >> transformation.index;
-        transformation.index--;
-        transformation.transformation_type = Transformation::GetType(type);
+        stream >> index;
+        index--;
 
-        mesh.transformations.push_back(transformation);
+        switch (type) {
+          case 's':
+            mesh.transformation *= scalings[index].ToMatrix();
+            break;
+          case 't':
+            mesh.transformation *= translations[index].ToMatrix();
+            break;
+          case 'r':
+            mesh.transformation *= rotations[index].ToMatrix();
+            break;
+        }
       }
       stream.clear();
     }
@@ -208,17 +262,28 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
     }
 
     child = element->FirstChildElement("Transformations");
+    mesh_instance.transformation =
+        meshes[mesh_instance.base_mesh_id].transformation;
     if (child != nullptr) {
       char type;
-      Transformation transformation;
+      int index;
       stream.clear();
       stream << child->GetText() << std::endl;
       while (!(stream >> type).eof()) {
-        stream >> transformation.index;
-        transformation.index--;
-        transformation.transformation_type = Transformation::GetType(type);
+        stream >> index;
+        index--;
 
-        mesh_instance.transformations.push_back(transformation);
+        switch (type) {
+          case 's':
+            mesh_instance.transformation *= scalings[index].ToMatrix();
+            break;
+          case 't':
+            mesh_instance.transformation *= translations[index].ToMatrix();
+            break;
+          case 'r':
+            mesh_instance.transformation *= rotations[index].ToMatrix();
+            break;
+        }
       }
       stream.clear();
     }
@@ -246,17 +311,27 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
     }
 
     child = element->FirstChildElement("Transformations");
+    triangle.transformation.MakeIdentity();
     if (child != nullptr) {
       char type;
-      Transformation transformation;
+      int index;
       stream.clear();
       stream << child->GetText() << std::endl;
       while (!(stream >> type).eof()) {
-        stream >> transformation.index;
-        transformation.index--;
-        transformation.transformation_type = Transformation::GetType(type);
+        stream >> index;
+        index--;
 
-        triangle.transformations.push_back(transformation);
+        switch (type) {
+          case 's':
+            triangle.transformation *= scalings[index].ToMatrix();
+            break;
+          case 't':
+            triangle.transformation *= translations[index].ToMatrix();
+            break;
+          case 'r':
+            triangle.transformation *= rotations[index].ToMatrix();
+            break;
+        }
       }
       stream.clear();
     }
@@ -294,17 +369,27 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
     }
 
     child = element->FirstChildElement("Transformations");
+    triangle.transformation.MakeIdentity();
     if (child != nullptr) {
       char type;
-      Transformation transformation;
+      int index;
       stream.clear();
       stream << child->GetText() << std::endl;
       while (!(stream >> type).eof()) {
-        stream >> transformation.index;
-        transformation.index--;
-        transformation.transformation_type = Transformation::GetType(type);
+        stream >> index;
+        index--;
 
-        sphere.transformations.push_back(transformation);
+        switch (type) {
+          case 's':
+            sphere.transformation *= scalings[index].ToMatrix();
+            break;
+          case 't':
+            sphere.transformation *= translations[index].ToMatrix();
+            break;
+          case 'r':
+            sphere.transformation *= rotations[index].ToMatrix();
+            break;
+        }
       }
       stream.clear();
     }
@@ -342,49 +427,6 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
 
       textures.push_back(texture);
       element = element->NextSiblingElement("Texture");
-    }
-  }
-
-  // Get Transformations
-  element = root->FirstChildElement("Transformations");
-  if (element) {
-    // Get Scalings
-    child = element->FirstChildElement("Scaling");
-    if (child) {
-      Scaling scaling;
-      while (child) {
-        stream << child->GetText() << std::endl;
-        stream >> scaling.x >> scaling.y >> scaling.z;
-
-        scalings.push_back(scaling);
-        child = child->NextSiblingElement("Scaling");
-      }
-    }
-
-    // Get Translations
-    child = element->FirstChildElement("Translation");
-    if (child) {
-      Translation translation;
-      while (child) {
-        stream << child->GetText() << std::endl;
-        stream >> translation.x >> translation.y >> translation.z;
-
-        translations.push_back(translation);
-        child = child->NextSiblingElement("Translation");
-      }
-    }
-
-    // Get Rotations
-    child = element->FirstChildElement("Rotation");
-    if (child) {
-      Rotation rotation;
-      while (child) {
-        stream << child->GetText() << std::endl;
-        stream >> rotation.angle >> rotation.x >> rotation.y >> rotation.z;
-
-        rotations.push_back(rotation);
-        child = child->NextSiblingElement("Rotation");
-      }
     }
   }
 
