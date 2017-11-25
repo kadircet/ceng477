@@ -14,7 +14,7 @@ bool NotZero(const Vec3f vec) { return vec.x != 0 || vec.y != 0 || vec.z != 0; }
 const Vec3f SceneRenderer::GetShadingConstant(int texture_id, float u, float v,
                                               const Vec3f& kd) const {
   Vec3f res;
-  if (texture_id == -1) return res;
+  if (texture_id == -1) return kd;
 
   const Texture texture = *scene_.textures[texture_id];
   res = texture.Get(u, v);
@@ -70,12 +70,14 @@ const Vec3f SceneRenderer::TraceRay(const Ray& ray, int depth,
       const float cos_thetap = cos_theta > 0. ? cos_theta : 0.;
       color += is_replace_all ? C : (C * cos_thetap).PointWise(intensity);
 
-      // Specular light
-      const Vec3f h = (wi_normal - direction).Normalized();
-      const float cos_alpha = normal * h;
-      const float cos_alphap = cos_alpha > 0. ? cos_alpha : 0.;
-      color += (material.specular * pow(cos_alphap, material.phong_exponent))
-                   .PointWise(intensity);
+      if (!is_replace_all) {
+        // Specular light
+        const Vec3f h = (wi_normal - direction).Normalized();
+        const float cos_alpha = normal * h;
+        const float cos_alphap = cos_alpha > 0. ? cos_alpha : 0.;
+        color += (material.specular * pow(cos_alphap, material.phong_exponent))
+                     .PointWise(intensity);
+      }
     }
     // Specular reflection
     if (depth > 0 && NotZero(material.mirror)) {

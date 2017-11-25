@@ -30,7 +30,6 @@ struct Transformation {
   int index;
 
   static TransformationType GetType(char c) {
-    std::cout << "Read transformation of type: " << c << std::endl;
     if (c == 's') return SCALING;
     return c == 't' ? TRANSLATION : ROTATION;
   }
@@ -215,8 +214,11 @@ struct Material {
 
 struct Face : Object {
   Vec3f v0;
+  Vec3f ua;
   Vec3f v1;
+  Vec3f ub;
   Vec3f v2;
+  Vec3f uc;
   int material_id;
   int texture_id;
   Vec3f normal;
@@ -252,9 +254,9 @@ struct Face : Object {
     HitRecord hit_record;
     hit_record.t = kInf;
     hit_record.material_id = -1;
-    if (!ray.is_shadow && ray.direction * normal > .0) {
+    /*if (!ray.is_shadow && ray.direction * normal > .0) {
       return hit_record;
-    }
+    }*/
     const Vec3f direction = ray.direction;
     // a->v0 b->v1 c->v2
     const float detA = Determinant(ba, ca, direction);
@@ -274,8 +276,8 @@ struct Face : Object {
       hit_record.material_id = material_id;
       hit_record.texture_id = texture_id;
       hit_record.obj = this;
-      hit_record.u = 0;
-      hit_record.v = 0;
+      hit_record.u = ua.x + beta * (ub.x - ua.x) + gama * (uc.x - ua.x);
+      hit_record.v = ua.y + beta * (ub.y - ua.y) + gama * (uc.y - ua.y);
     }
     return hit_record;
   }
@@ -316,6 +318,7 @@ struct Sphere : Object {
   Matrix inverse_transformation_transpose;
   Vec3f center_of_sphere;
   float radius;
+  float radius_squared;
 
   Vec3f GetNormal(float t, const Ray& ray) const {
     return (ray.direction * t + ray.origin - center_of_sphere).Normalized();
@@ -329,7 +332,6 @@ struct Sphere : Object {
         ray.direction * sphere_to_camera;
     const float norm_of_sphere_to_camera_squared =
         sphere_to_camera * sphere_to_camera;
-    const float radius_squared = radius * radius;
     const float determinant =
         direction_times_sphere_to_camera * direction_times_sphere_to_camera -
         (norm_of_sphere_to_camera_squared - radius_squared);
@@ -341,7 +343,13 @@ struct Sphere : Object {
     } else {
       const float t1 = (-direction_times_sphere_to_camera + sqrt(determinant));
       const float t2 = (-direction_times_sphere_to_camera - sqrt(determinant));
-      hit_record.t = fmin(t1, t2);
+      if (t1 > .0 && t2 > .0) {
+        hit_record.t = fmin(t1, t2);
+      } else if (t1 > .0) {
+        hit_record.t = t1;
+      } else {
+        hit_record.t = t2;
+      }
     }
     hit_record.material_id = material_id;
     hit_record.texture_id = texture_id;
@@ -357,6 +365,7 @@ struct Sphere : Object {
     const Vec3f rad_vec = Vec3f(radius, radius, radius);
     const Vec3f min_c = center_of_sphere - rad_vec;
     const Vec3f max_c = center_of_sphere + rad_vec;
+    radius_squared = radius * radius;
     bounding_box.min_corner = min_c;
     bounding_box.max_corner = max_c;
   }

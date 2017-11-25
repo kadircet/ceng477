@@ -178,6 +178,17 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
     stream.clear();
   }
 
+  // Get TexCoordData
+  element = root->FirstChildElement("TexCoordData");
+  if (element) {
+    stream << element->GetText() << std::endl;
+    while (!(stream >> vertex.x).eof()) {
+      stream >> vertex.y;
+      tex_coord_data.push_back(vertex);
+    }
+    stream.clear();
+  }
+
   // Get Meshes
   element = root->FirstChildElement("Objects");
   element = element->FirstChildElement("Mesh");
@@ -234,6 +245,11 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
       face.v2 = transformation * vertex_data[v2_id - 1];
       face.material_id = mesh.material_id;
       face.texture_id = mesh.texture_id;
+      if (face.texture_id != -1) {
+        face.ua = tex_coord_data[v0_id - 1];
+        face.ub = tex_coord_data[v1_id - 1];
+        face.uc = tex_coord_data[v2_id - 1];
+      }
       face.CalculateNormal();
       mesh.faces.push_back(std::move(face));
     }
@@ -362,6 +378,11 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
     triangle.indices.v2 = transformation * vertex_data[v2_id - 1];
     triangle.indices.material_id = triangle.material_id;
     triangle.indices.texture_id = triangle.texture_id;
+    if (triangle.texture_id != -1) {
+      triangle.indices.ua = tex_coord_data[v0_id - 1];
+      triangle.indices.ub = tex_coord_data[v1_id - 1];
+      triangle.indices.uc = tex_coord_data[v2_id - 1];
+    }
     triangle.indices.CalculateNormal();
 
     triangles.push_back(std::move(triangle));
@@ -397,7 +418,6 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
       while (!(stream >> type).eof()) {
         stream >> index;
         index--;
-        std::cout << type << ' ' << index << std::endl;
 
         switch (type) {
           case 's':
@@ -425,6 +445,10 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
         sphere.inverse_transformation[i / 4][i % 4] = inv_trans[i];
         sphere.inverse_transformation_transpose[i % 4][i / 4] = inv_trans[i];
       }
+      sphere.transformation.Print();
+      sphere.inverse_transformation.Print();
+      sphere.inverse_transformation_transpose.Print();
+      std::cout << "=========" << std::endl;
     }
 
     child = element->FirstChildElement("Center");
@@ -461,16 +485,6 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
 
       textures.push_back(texture);
       element = element->NextSiblingElement("Texture");
-    }
-  }
-
-  // Get TexCoordData
-  element = root->FirstChildElement("TexCoordData");
-  if (element) {
-    stream << element->GetText() << std::endl;
-    while (!(stream >> vertex.x).eof()) {
-      stream >> vertex.y >> vertex.z;
-      tex_coord_data.push_back(vertex);
     }
   }
 }
