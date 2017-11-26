@@ -410,6 +410,7 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
     child = element->FirstChildElement("Transformations");
     sphere.transformation.MakeIdentity();
     sphere.inverse_transformation.MakeIdentity();
+    sphere.inverse_transformation_transpose.MakeIdentity();
     if (child != nullptr) {
       char type;
       int index;
