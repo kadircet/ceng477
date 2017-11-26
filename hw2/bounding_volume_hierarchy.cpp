@@ -143,7 +143,8 @@ HitRecord BoundingVolumeHierarchy::GetIntersection(
       if (hit_record_sp.t < hit_record.t && hit_record_sp.t > .0) {
         hit_record = hit_record_sp;
         hit_record.normal =
-            sphere.inverse_transformation_transpose * hit_record_sp.normal;
+            (sphere.inverse_transformation_transpose * hit_record_sp.normal)
+                .Normalized();
       }
     }
   }

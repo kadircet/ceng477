@@ -11,8 +11,7 @@ class SceneRenderer {
   std::vector<Object*> objects_;
   BoundingVolumeHierarchy* bounding_volume_hierarchy;
 
-  const parser::Vec3f TraceRay(const Ray& ray, int depth,
-                               const Object* hit_obj) const;
+  const parser::Vec3f TraceRay(const Ray& ray, const Object* hit_obj) const;
   const parser::Vec3f CalculateS(int i, int j) const;
   const parser::Vec3i RenderPixel(int i, int j,
                                   const parser::Camera& camera) const;

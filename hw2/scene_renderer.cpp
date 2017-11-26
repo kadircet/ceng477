@@ -28,7 +28,7 @@ const Vec3f SceneRenderer::CalculateS(int i, int j) const {
   return q + usu * (i + .5) - vsv * (j + .5);
 }
 
-const Vec3f SceneRenderer::TraceRay(const Ray& ray, int depth,
+const Vec3f SceneRenderer::TraceRay(const Ray& ray,
                                     const Object* hit_obj = nullptr) const {
   Vec3f color = scene_.background_color;
   const HitRecord hit_record =
@@ -42,7 +42,6 @@ const Vec3f SceneRenderer::TraceRay(const Ray& ray, int depth,
     const Vec3f intersection_point = origin + direction * hit_record.t;
     const Vec3f normal = hit_record.normal;
     const Material material = scene_.materials[material_id];
-    color = scene_.ambient_light.PointWise(material.ambient);
     const Vec3f C = GetShadingConstant(texture_id, hit_record.u, hit_record.v,
                                        material.diffuse);
     bool is_replace_all =
@@ -50,28 +49,30 @@ const Vec3f SceneRenderer::TraceRay(const Ray& ray, int depth,
             ? false
             : scene_.textures[texture_id]->decal_mode == Texture::REPLACE_ALL;
 
-    for (const PointLight& light : scene_.point_lights) {
-      // Shadow check
-      const Vec3f wi = light.position - intersection_point;
-      const Vec3f wi_normal = wi.Normalized();
-      const Ray shadow_ray{
-          intersection_point + wi_normal * scene_.shadow_ray_epsilon, wi_normal,
-          true};
-      if (bounding_volume_hierarchy->GetIntersection(
-              shadow_ray, wi.Length() - scene_.shadow_ray_epsilon,
-              hit_record.obj)) {
-        continue;
-      }
-      const float r_square = wi * wi;
-      const Vec3f intensity = light.intensity / r_square;
+    if (is_replace_all) {
+      color = C;
+    } else {
+      color = scene_.ambient_light.PointWise(material.ambient);
+      for (const PointLight& light : scene_.point_lights) {
+        // Shadow check
+        const Vec3f wi = light.position - intersection_point;
+        const Vec3f wi_normal = wi.Normalized();
+        const Ray shadow_ray{
+            intersection_point + wi_normal * scene_.shadow_ray_epsilon,
+            wi_normal, true};
+        if (bounding_volume_hierarchy->GetIntersection(
+                shadow_ray, wi.Length() - scene_.shadow_ray_epsilon,
+                hit_record.obj)) {
+          continue;
+        }
+        const float r_square = wi * wi;
+        const Vec3f intensity = light.intensity / r_square;
 
-      // Diffuse light
-      const float cos_theta = wi_normal * normal;
-      const float cos_thetap = cos_theta > 0. ? cos_theta : 0.;
-      color =
-          is_replace_all ? C : color + (C * cos_thetap).PointWise(intensity);
+        // Diffuse light
+        const float cos_theta = wi_normal * normal;
+        const float cos_thetap = cos_theta > 0. ? cos_theta : 0.;
+        color += (C * cos_thetap).PointWise(intensity);
 
-      if (!is_replace_all) {
         // Specular light
         const Vec3f h = (wi_normal - direction).Normalized();
         const float cos_alpha = normal * h;
@@ -80,15 +81,6 @@ const Vec3f SceneRenderer::TraceRay(const Ray& ray, int depth,
                      .PointWise(intensity);
       }
     }
-    // Specular reflection
-    /*if (depth > 0 && NotZero(material.mirror)) {
-      const Vec3f wi =
-          (direction + normal * -2 * (direction * normal)).Normalized();
-      const Ray reflection_ray{
-          intersection_point + wi * scene_.shadow_ray_epsilon, wi, false};
-      color += TraceRay(reflection_ray, depth - 1, hit_record.obj)
-                   .PointWise(material.mirror);
-    }*/
   }
   return color;
 }
@@ -98,7 +90,7 @@ const Vec3i SceneRenderer::RenderPixel(int i, int j,
   const Vec3f origin = camera.position;
   const Vec3f direction = (CalculateS(i, j) - origin).Normalized();
   const Ray ray{origin, direction, false};
-  return SceneRenderer::TraceRay(ray, scene_.max_recursion_depth).ToVec3i();
+  return SceneRenderer::TraceRay(ray).ToVec3i();
 }
 
 void SceneRenderer::RenderImage(const Camera& camera, Vec3i* result,

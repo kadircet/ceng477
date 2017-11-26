@@ -254,9 +254,9 @@ struct Face : Object {
     HitRecord hit_record;
     hit_record.t = kInf;
     hit_record.material_id = -1;
-    /*if (!ray.is_shadow && ray.direction * normal > .0) {
+    if (!ray.is_shadow && ray.direction * normal > .0) {
       return hit_record;
-    }*/
+    }
     const Vec3f direction = ray.direction;
     // a->v0 b->v1 c->v2
     const float detA = Determinant(ba, ca, direction);
@@ -343,6 +343,7 @@ struct Sphere : Object {
     } else {
       const float t1 = (-direction_times_sphere_to_camera + sqrt(determinant));
       const float t2 = (-direction_times_sphere_to_camera - sqrt(determinant));
+      hit_record.t = fmin(t1, t2);
       if (t1 > .0 && t2 > .0) {
         hit_record.t = fmin(t1, t2);
       } else if (t1 > .0) {
