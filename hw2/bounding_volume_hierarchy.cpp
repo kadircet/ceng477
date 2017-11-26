@@ -142,9 +142,9 @@ HitRecord BoundingVolumeHierarchy::GetIntersection(
       const HitRecord hit_record_sp = sphere.GetIntersection(ray_transformed);
       if (hit_record_sp.t < hit_record.t && hit_record_sp.t > .0) {
         hit_record = hit_record_sp;
-        hit_record.normal =
-            (sphere.inverse_transformation_transpose * hit_record_sp.normal)
-                .Normalized();
+        hit_record.normal = sphere.inverse_transformation_transpose
+                                .MultiplyVector(hit_record_sp.normal)
+                                .Normalized();
       }
     }
   }
