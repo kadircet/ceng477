@@ -445,10 +445,6 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
         sphere.inverse_transformation[i / 4][i % 4] = inv_trans[i];
         sphere.inverse_transformation_transpose[i % 4][i / 4] = inv_trans[i];
       }
-      sphere.transformation.Print();
-      sphere.inverse_transformation.Print();
-      sphere.inverse_transformation_transpose.Print();
-      std::cout << "=========" << std::endl;
     }
 
     child = element->FirstChildElement("Center");

@@ -68,7 +68,8 @@ const Vec3f SceneRenderer::TraceRay(const Ray& ray, int depth,
       // Diffuse light
       const float cos_theta = wi_normal * normal;
       const float cos_thetap = cos_theta > 0. ? cos_theta : 0.;
-      color += is_replace_all ? C : (C * cos_thetap).PointWise(intensity);
+      color =
+          is_replace_all ? C : color + (C * cos_thetap).PointWise(intensity);
 
       if (!is_replace_all) {
         // Specular light
@@ -80,14 +81,14 @@ const Vec3f SceneRenderer::TraceRay(const Ray& ray, int depth,
       }
     }
     // Specular reflection
-    if (depth > 0 && NotZero(material.mirror)) {
+    /*if (depth > 0 && NotZero(material.mirror)) {
       const Vec3f wi =
           (direction + normal * -2 * (direction * normal)).Normalized();
       const Ray reflection_ray{
           intersection_point + wi * scene_.shadow_ray_epsilon, wi, false};
       color += TraceRay(reflection_ray, depth - 1, hit_record.obj)
                    .PointWise(material.mirror);
-    }
+    }*/
   }
   return color;
 }
@@ -119,6 +120,11 @@ SceneRenderer::SceneRenderer(const char* scene_path) {
     objects_.push_back(&obj);
   }*/
   for (Mesh& mesh : scene_.meshes) {
+    for (Face& obj : mesh.faces) {
+      objects_.push_back(&obj);
+    }
+  }
+  for (MeshInstance& mesh : scene_.mesh_instances) {
     for (Face& obj : mesh.faces) {
       objects_.push_back(&obj);
     }
