@@ -47,6 +47,16 @@ struct Scaling : Transformation {
 
     return mat;
   }
+
+  Matrix InverseMatrix() {
+    Matrix mat;
+    mat[0][0] = 1 / x;
+    mat[1][1] = 1 / y;
+    mat[2][2] = 1 / z;
+    mat[3][3] = 1;
+
+    return mat;
+  }
 };
 
 struct Translation : Transformation {
@@ -58,6 +68,17 @@ struct Translation : Transformation {
     mat[0][3] = x;
     mat[1][3] = y;
     mat[2][3] = z;
+
+    return mat;
+  }
+
+  Matrix InverseMatrix() {
+    Matrix mat;
+    mat.MakeIdentity();
+    mat[0][3] = -x;
+    mat[1][3] = -y;
+    mat[2][3] = -z;
+    mat[3][3] = 1;
 
     return mat;
   }
@@ -88,6 +109,35 @@ struct Rotation : Transformation {
     rot[0][0] = 1;
     rot[1][1] = cos(angle);
     rot[1][2] = -sin(angle);
+    rot[2][1] = -rot[1][2];
+    rot[2][2] = rot[1][1];
+    rot[3][3] = 1;
+
+    return M.Transpose() * (rot * M);
+  }
+
+  Matrix InverseMatrix() {
+    const Vec3f u = Vec3f(x, y, z).Normalized();
+    const Vec3f v = ((x != 0 || y != 0) ? Vec3f(-u.y, u.x, .0) : Vec3f(0, 1, 0))
+                        .Normalized();
+    const Vec3f w = u.CrossProduct(v);
+
+    Matrix M;
+    M[0][0] = u.x;
+    M[0][1] = u.y;
+    M[0][2] = u.z;
+    M[1][0] = v.x;
+    M[1][1] = v.y;
+    M[1][2] = v.z;
+    M[2][0] = w.x;
+    M[2][1] = w.y;
+    M[2][2] = w.z;
+    M[3][3] = 1;
+
+    Matrix rot;
+    rot[0][0] = 1;
+    rot[1][1] = cos(-angle);
+    rot[1][2] = -sin(-angle);
     rot[2][1] = -rot[1][2];
     rot[2][2] = rot[1][1];
     rot[3][3] = 1;

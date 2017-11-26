@@ -1,7 +1,6 @@
 #include "parser.h"
 #include <sstream>
 #include <stdexcept>
-#include "matrixInverse.h"
 #include "tinyxml2.h"
 
 void parser::Scene::loadFromXml(const std::string& filepath) {
@@ -424,28 +423,24 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
           case 's':
             sphere.transformation =
                 scalings[index].ToMatrix() * sphere.transformation;
+            sphere.inverse_transformation *= scalings[index].InverseMatrix();
             break;
           case 't':
             sphere.transformation =
                 translations[index].ToMatrix() * sphere.transformation;
+            sphere.inverse_transformation *=
+                translations[index].InverseMatrix();
             break;
           case 'r':
             sphere.transformation =
                 rotations[index].ToMatrix() * sphere.transformation;
+            sphere.inverse_transformation *= rotations[index].InverseMatrix();
             break;
         }
       }
       stream.clear();
-      double trans[16];
-      double inv_trans[16];
-      for (int i = 0; i < 16; i++) {
-        trans[i] = sphere.transformation[i / 4][i % 4];
-      }
-      invert(trans, inv_trans);
-      for (int i = 0; i < 16; i++) {
-        sphere.inverse_transformation[i / 4][i % 4] = inv_trans[i];
-        sphere.inverse_transformation_transpose[i % 4][i / 4] = inv_trans[i];
-      }
+      sphere.inverse_transformation_transpose =
+          sphere.inverse_transformation.Transpose();
     }
 
     child = element->FirstChildElement("Center");
