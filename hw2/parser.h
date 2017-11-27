@@ -328,6 +328,7 @@ struct Face : Object {
       hit_record.obj = this;
       hit_record.u = ua.x + beta * (ub.x - ua.x) + gama * (uc.x - ua.x);
       hit_record.v = ua.y + beta * (ub.y - ua.y) + gama * (uc.y - ua.y);
+      hit_record.intersection_point = ray.origin + ray.direction * t;
     }
     return hit_record;
   }
@@ -370,8 +371,8 @@ struct Sphere : Object {
   float radius;
   float radius_squared;
 
-  Vec3f GetNormal(float t, const Ray& ray) const {
-    return (ray.direction * t + ray.origin - center_of_sphere).Normalized();
+  Vec3f GetNormal(const Vec3f& intersection_point, const Ray& ray) const {
+    return (intersection_point - center_of_sphere).Normalized();
   }
 
   HitRecord GetIntersection(const Ray& ray) const {
@@ -404,7 +405,8 @@ struct Sphere : Object {
     }
     hit_record.material_id = material_id;
     hit_record.texture_id = texture_id;
-    hit_record.normal = GetNormal(hit_record.t, ray);
+    hit_record.intersection_point = ray.origin + ray.direction * hit_record.t;
+    hit_record.normal = GetNormal(hit_record.intersection_point, ray);
     hit_record.obj = this;
     hit_record.u =
         (-atan2(hit_record.normal.z, hit_record.normal.x) + M_PI) / M_PI / 2;

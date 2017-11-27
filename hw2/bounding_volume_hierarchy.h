@@ -25,6 +25,7 @@ struct HitRecord {
   float u;
   float v;
   parser::Vec3f normal;
+  parser::Vec3f intersection_point;
   const Object* obj;
 };
 

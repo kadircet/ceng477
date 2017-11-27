@@ -39,7 +39,7 @@ const Vec3f SceneRenderer::TraceRay(const Ray& ray,
   if (material_id != -1) {
     const Vec3f origin = ray.origin;
     const Vec3f direction = ray.direction;
-    const Vec3f intersection_point = origin + direction * hit_record.t;
+    const Vec3f intersection_point = hit_record.intersection_point;
     const Vec3f normal = hit_record.normal;
     const Material material = scene_.materials[material_id];
     const Vec3f C = GetShadingConstant(texture_id, hit_record.u, hit_record.v,

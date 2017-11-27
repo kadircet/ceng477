@@ -145,6 +145,8 @@ HitRecord BoundingVolumeHierarchy::GetIntersection(
         hit_record.normal = sphere.inverse_transformation_transpose
                                 .MultiplyVector(hit_record_sp.normal)
                                 .Normalized();
+        hit_record.intersection_point =
+            sphere.transformation * hit_record.intersection_point;
       }
     }
   }
