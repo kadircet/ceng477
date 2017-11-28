@@ -371,7 +371,7 @@ struct Sphere : Object {
   float radius;
   float radius_squared;
 
-  Vec3f GetNormal(const Vec3f& intersection_point, const Ray& ray) const {
+  Vec3f GetNormal(const Vec3f& intersection_point) const {
     return (intersection_point - center_of_sphere).Normalized();
   }
 
@@ -395,9 +395,7 @@ struct Sphere : Object {
       const float t1 = (-direction_times_sphere_to_camera + sqrt(determinant));
       const float t2 = (-direction_times_sphere_to_camera - sqrt(determinant));
       hit_record.t = fmin(t1, t2);
-      if (t1 > .0 && t2 > .0) {
-        hit_record.t = fmin(t1, t2);
-      } else if (t1 > .0) {
+      if (t2 < .0) {
         hit_record.t = t1;
       } else {
         hit_record.t = t2;
@@ -406,7 +404,7 @@ struct Sphere : Object {
     hit_record.material_id = material_id;
     hit_record.texture_id = texture_id;
     hit_record.intersection_point = ray.origin + ray.direction * hit_record.t;
-    hit_record.normal = GetNormal(hit_record.intersection_point, ray);
+    hit_record.normal = GetNormal(hit_record.intersection_point);
     hit_record.obj = this;
     hit_record.u =
         (-atan2(hit_record.normal.z, hit_record.normal.x) + M_PI) / M_PI / 2;

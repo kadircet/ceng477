@@ -104,19 +104,36 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
   element = element->FirstChildElement("Material");
   Material material;
   while (element) {
-    child = element->FirstChildElement("AmbientReflectance");
-    stream << child->GetText() << std::endl;
-    child = element->FirstChildElement("DiffuseReflectance");
-    stream << child->GetText() << std::endl;
-    child = element->FirstChildElement("SpecularReflectance");
-    stream << child->GetText() << std::endl;
-    child = element->FirstChildElement("PhongExponent");
-    stream << child->GetText() << std::endl;
+    child = element->FirstChildElement("MirrorReflectance");
+    if (child) {
+      stream << child->GetText() << std::endl;
+      stream >> material.mirror.x >> material.mirror.y >> material.mirror.z;
+    }
 
-    stream >> material.ambient.x >> material.ambient.y >> material.ambient.z;
-    stream >> material.diffuse.x >> material.diffuse.y >> material.diffuse.z;
-    stream >> material.specular.x >> material.specular.y >> material.specular.z;
-    stream >> material.phong_exponent;
+    child = element->FirstChildElement("AmbientReflectance");
+    if (child) {
+      stream << child->GetText() << std::endl;
+      stream >> material.ambient.x >> material.ambient.y >> material.ambient.z;
+    }
+
+    child = element->FirstChildElement("DiffuseReflectance");
+    if (child) {
+      stream << child->GetText() << std::endl;
+      stream >> material.diffuse.x >> material.diffuse.y >> material.diffuse.z;
+    }
+
+    child = element->FirstChildElement("SpecularReflectance");
+    if (child) {
+      stream << child->GetText() << std::endl;
+      stream >> material.specular.x >> material.specular.y >>
+          material.specular.z;
+    }
+
+    child = element->FirstChildElement("PhongExponent");
+    if (child) {
+      stream << child->GetText() << std::endl;
+      stream >> material.phong_exponent;
+    }
 
     materials.push_back(material);
     element = element->NextSiblingElement("Material");

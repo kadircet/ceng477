@@ -28,7 +28,7 @@ const Vec3f SceneRenderer::CalculateS(int i, int j) const {
   return q + usu * (i + .5) - vsv * (j + .5);
 }
 
-const Vec3f SceneRenderer::TraceRay(const Ray& ray,
+const Vec3f SceneRenderer::TraceRay(const Ray& ray, int depth,
                                     const Object* hit_obj = nullptr) const {
   Vec3f color = scene_.background_color;
   const HitRecord hit_record =
@@ -37,7 +37,6 @@ const Vec3f SceneRenderer::TraceRay(const Ray& ray,
   const int texture_id = hit_record.texture_id;
 
   if (material_id != -1) {
-    const Vec3f origin = ray.origin;
     const Vec3f direction = ray.direction;
     const Vec3f intersection_point = hit_record.intersection_point;
     const Vec3f normal = hit_record.normal;
@@ -80,6 +79,15 @@ const Vec3f SceneRenderer::TraceRay(const Ray& ray,
         color += (material.specular * pow(cos_alphap, material.phong_exponent))
                      .PointWise(intensity);
       }
+      // Specular reflection
+      if (depth > 0 && NotZero(material.mirror)) {
+        const Vec3f wi =
+            (direction + normal * -2 * (direction * normal)).Normalized();
+        const Ray reflection_ray{
+            intersection_point + wi * scene_.shadow_ray_epsilon, wi, false};
+        color += TraceRay(reflection_ray, depth - 1, hit_record.obj)
+                     .PointWise(material.mirror);
+      }
     }
   }
   return color;
@@ -90,7 +98,7 @@ const Vec3i SceneRenderer::RenderPixel(int i, int j,
   const Vec3f origin = camera.position;
   const Vec3f direction = (CalculateS(i, j) - origin).Normalized();
   const Ray ray{origin, direction, false};
-  return SceneRenderer::TraceRay(ray).ToVec3i();
+  return SceneRenderer::TraceRay(ray, scene_.max_recursion_depth).ToVec3i();
 }
 
 void SceneRenderer::RenderImage(const Camera& camera, Vec3i* result,
