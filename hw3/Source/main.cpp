@@ -33,6 +33,19 @@ static void keyCallback(GLFWwindow* window, int key, int scancode, int action,
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
     glfwSetWindowShouldClose(window, GLFW_TRUE);
 }
+void applyTransformation(const parser::Transformation& transformation) {
+  const std::string& type = transformation.transformation_type;
+  if (type == "Translation") {
+    const Vec3f& translation = scene.translations[transformation.id];
+    glTranslatef(translation.x, translation.y, translation.z);
+  } else if (type == "Scaling") {
+    const Vec3f& scaling = scene.scalings[transformation.id];
+    glScalef(scaling.x, scaling.y, scaling.z)
+  } else {
+    const Vec4f& rotation = scene.rotations[transformation.id];
+    glRotatef(rotation.x, rotation.y, rotation.z, rotation.w);
+  }
+}
 
 void display() {
   static bool firstTime = true;
@@ -82,20 +95,19 @@ void display() {
   }
 
   glVertexPointer(3, GL_FLOAT, 0, 0);
-
-  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-  glPushMatrix();
-  glTranslatef(scene.translations[2].x, scene.translations[2].y,
-               scene.translations[2].z);
-  glRotatef(scene.rotations[0].x, scene.rotations[0].y, scene.rotations[0].z,
-            scene.rotations[0].w);
-  glRotatef(scene.rotations[0].x, scene.rotations[0].y, scene.rotations[0].z,
-            scene.rotations[0].w);
-  glRotatef(scene.rotations[0].x, scene.rotations[0].y, scene.rotations[0].z,
-            scene.rotations[0].w);
-  glDrawElements(GL_TRIANGLES, scene.face_count * 3 - 6, GL_UNSIGNED_INT,
-                 (const void*)(6 * sizeof(GLuint)));
-  glPopMatrix();
+  mesh_face_offset = 0;
+  for (const parser::Mesh& mesh : meshes) {
+    glPushMatrix();
+    for (int index = mesh.transformations.size() - 1; index >= 0; index--) {
+      const parser::Transformation& transformation =
+          mesh.transformations[index];
+      applyTransformation(transformation);
+    }
+    glDrawElements(GL_TRIANGLES, mesh.faces.size() * 3, GL_UNSIGNED_INT,
+                   (const void*)mesh_face_offset * 3 * sizeof(GLuint));
+    mesh_face_offset += mesh.faces.size();
+    glPopMatrix();
+  }
 }
 
 void render() {
