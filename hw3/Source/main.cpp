@@ -75,6 +75,24 @@ static void keyCallback(GLFWwindow* window, int key, int scancode, int action,
         scene.camera.position += scene.camera.gaze.Normalized() * -.05;
         SetCamera();
         break;
+      case GLFW_KEY_A:
+        parser::Camera& camera = scene.camera;
+        const parser::Rotation rot = {0.5f, camera.up.x, camera.up.y,
+                                      camera.up.z};
+        camera.gaze = rot.ToMatrix().MultiplyVector(camera.gaze);
+        camera.right = camera.gaze.CrossProduct(camera.up);
+        camera.up = camera.right.CrossProduct(camera.gaze);
+        SetCamera();
+        break;
+      case GLFW_KEY_D:
+        parser::Camera& camera = scene.camera;
+        const parser::Rotation rot = {-0.5f, camera.up.x, camera.up.y,
+                                      camera.up.z};
+        camera.gaze = rot.ToMatrix().MultiplyVector(camera.gaze);
+        camera.right = camera.gaze.CrossProduct(camera.up);
+        camera.up = camera.right.CrossProduct(camera.gaze);
+        SetCamera();
+        break;
     }
   }
 }

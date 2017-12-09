@@ -139,6 +139,140 @@ struct Vec4f {
   float x, y, z, w;
 };
 
+struct Matrix {
+  float elems[4][4];
+
+  float* operator[](int idx) { return elems[idx]; }
+  const float* operator[](int idx) const { return elems[idx]; }
+
+  Matrix() {
+    for (int i = 0; i < 4; i++)
+      for (int j = 0; j < 4; j++) elems[i][j] = 0.;
+  }
+
+  void Print() {
+    for (int i = 0; i < 4; i++) {
+      for (int j = 0; j < 4; j++) {
+        std::cout << elems[i][j] << ' ';
+      }
+      std::cout << std::endl;
+    }
+  }
+
+  Matrix Transpose() {
+    Matrix trans;
+    for (int i = 0; i < 4; i++) {
+      for (int j = 0; j < 4; j++) {
+        trans[i][j] = elems[j][i];
+      }
+    }
+    return trans;
+  }
+
+  Vec3f MultiplyVector(const Vec3f& rhs) {
+    Vec3f res;
+    for (int i = 0; i < 3; i++) {
+      res[i] = 0;
+      for (int j = 0; j < 3; j++) {
+        res[i] += elems[i][j] * rhs[j];
+      }
+    }
+    return res;
+  }
+
+  Vec3f MultiplyVector(const Vec3f& rhs) const {
+    Vec3f res;
+    for (int i = 0; i < 3; i++) {
+      res[i] = 0;
+      for (int j = 0; j < 3; j++) {
+        res[i] += elems[i][j] * rhs[j];
+      }
+    }
+    return res;
+  }
+
+  Vec3f operator*(const Vec3f& rhs) const {
+    Vec3f res;
+    for (int i = 0; i < 3; i++) {
+      res[i] = elems[i][3];
+      for (int j = 0; j < 3; j++) {
+        res[i] += elems[i][j] * rhs[j];
+      }
+    }
+    return res;
+  }
+
+  Matrix operator*(const Matrix& rhs) {
+    Matrix res;
+    for (int i = 0; i < 4; i++) {
+      for (int j = 0; j < 4; j++) {
+        for (int k = 0; k < 4; k++) {
+          res[i][j] += elems[i][k] * rhs[k][j];
+        }
+      }
+    }
+    return res;
+  }
+
+  Matrix& operator*=(const Matrix& rhs) {
+    float res[4][4];
+    for (int i = 0; i < 4; i++) {
+      for (int j = 0; j < 4; j++) {
+        res[i][j] = 0;
+        for (int k = 0; k < 4; k++) {
+          res[i][j] += elems[i][k] * rhs[k][j];
+        }
+      }
+    }
+    for (int i = 0; i < 4; i++) {
+      for (int j = 0; j < 4; j++) {
+        elems[i][j] = res[i][j];
+      }
+    }
+    return *this;
+  }
+
+  void MakeIdentity() {
+    for (int i = 0; i < 4; i++) {
+      for (int j = 0; j < 4; j++) {
+        elems[i][j] = i == j ? 1. : .0;
+      }
+    }
+  }
+};
+
+struct Rotation {
+  float angle, x, y, z;
+
+  Matrix ToMatrix() {
+    const Vec3f u = Vec3f(x, y, z).Normalized();
+    const Vec3f v = ((x != 0 || y != 0) ? Vec3f(-u.y, u.x, .0) : Vec3f(0, 1, 0))
+                        .Normalized();
+    const Vec3f w = u.CrossProduct(v);
+
+    Matrix M;
+    M[0][0] = u.x;
+    M[0][1] = u.y;
+    M[0][2] = u.z;
+    M[1][0] = v.x;
+    M[1][1] = v.y;
+    M[1][2] = v.z;
+    M[2][0] = w.x;
+    M[2][1] = w.y;
+    M[2][2] = w.z;
+    M[3][3] = 1;
+
+    Matrix rot;
+    rot[0][0] = 1;
+    rot[1][1] = cos(angle);
+    rot[1][2] = -sin(angle);
+    rot[2][1] = -rot[1][2];
+    rot[2][2] = rot[1][1];
+    rot[3][3] = 1;
+
+    return M.Transpose() * (rot * M);
+  }
+};
 }  // namespace parser
 
 #endif
