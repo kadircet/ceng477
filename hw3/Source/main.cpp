@@ -16,13 +16,8 @@ static GLFWwindow* win = NULL;
 static bool lights_enabled = true;
 static bool light_disabled[10];
 
-char gRendererInfo[512] = {0};
-char gWindowTitle[512] = {0};
-
-int gWidth, gHeight;
 void Init() {
   glEnable(GL_DEPTH_TEST);
-
   glEnableClientState(GL_VERTEX_ARRAY);
   glEnableClientState(GL_NORMAL_ARRAY);
 }
@@ -54,7 +49,6 @@ static void keyCallback(GLFWwindow* window, int key, int scancode, int action,
   if (action == GLFW_PRESS || action == GLFW_REPEAT) {
     if (GLFW_KEY_0 < key && key < GLFW_KEY_9) {
       const size_t light_index = key - GLFW_KEY_0 - 1;
-      std::cout << "Toggling: " << light_index << std::endl;
       light_disabled[light_index] ? glEnable(GL_LIGHT0 + light_index)
                                   : glDisable(GL_LIGHT0 + light_index);
       light_disabled[light_index] ^= 1;
@@ -230,16 +224,8 @@ void render() {
   std::chrono::duration<double> elapsedTime = end - start;
   if (elapsedTime.count() > 1.) {
     start = std::chrono::system_clock::now();
-
-    std::stringstream stream;
-    stream << framesRendered;
+    std::cout << "FPS:" << framesRendered << std::endl;
     framesRendered = 0;
-
-    strcpy(gWindowTitle, gRendererInfo);
-    strcat(gWindowTitle, " - ");
-    strcat(gWindowTitle, stream.str().c_str());
-    strcat(gWindowTitle, " FPS");
-    std::cout << gWindowTitle << std::endl;
   }
 }
 
@@ -260,17 +246,14 @@ void SetLightSources() {
     glLightfv(GL_LIGHT0 + i, GL_DIFFUSE, intensity);
     glLightfv(GL_LIGHT0 + i, GL_SPECULAR, intensity);
     glEnable(GL_LIGHT0 + i);
-    std::cout << "Enabling: " << i << std::endl;
   }
 }
 
 void reshape(GLFWwindow* win, int w, int h) {
+  (void)win;
+
   w = w < 1 ? 1 : w;
   h = h < 1 ? 1 : h;
-
-  gWidth = w;
-  gHeight = h;
-
   glViewport(0, 0, w, h);
 }
 
