@@ -28,16 +28,14 @@ void Init() {
 }
 
 static void errorCallback(int error, const char* description) {
-  fprintf(stderr, "Error: %s\n", description);
+  fprintf(stderr, "Error(%d): %s\n", error, description);
 }
 
 void SetCamera() {
   const parser::Camera camera = scene.camera;
   const Vec3f eye = camera.position;
-  const Vec3f gaze = camera.gaze.Normalized();
-  const Vec3f u = gaze.CrossProduct(camera.up).Normalized();
-  const Vec3f v = u.CrossProduct(gaze);
-  const Vec3f center = eye + gaze * camera.near_distance;
+  const Vec3f center = eye + camera.gaze * camera.near_distance;
+  const Vec3f v = camera.up;
   const parser::Vec4f near_plane = camera.near_plane;
   glLoadIdentity();
   gluLookAt(eye.x, eye.y, eye.z, center.x, center.y, center.z, v.x, v.y, v.z);
@@ -51,6 +49,8 @@ void SetCamera() {
 
 static void keyCallback(GLFWwindow* window, int key, int scancode, int action,
                         int mods) {
+  (void)scancode;
+  (void)mods;
   if (action == GLFW_PRESS || action == GLFW_REPEAT) {
     if (GLFW_KEY_0 < key && key < GLFW_KEY_9) {
       const size_t light_index = key - GLFW_KEY_0 - 1;
@@ -80,10 +80,10 @@ static void keyCallback(GLFWwindow* window, int key, int scancode, int action,
 }
 void applyTransformation(const parser::Transformation& transformation) {
   const std::string& type = transformation.transformation_type;
-  if (type == "Translation") {
+  if (type[0] == 'T') {
     const Vec3f& translation = scene.translations[transformation.id];
     glTranslatef(translation.x, translation.y, translation.z);
-  } else if (type == "Scaling") {
+  } else if (type[0] == 'S') {
     const Vec3f& scaling = scene.scalings[transformation.id];
     glScalef(scaling.x, scaling.y, scaling.z);
   } else {
@@ -258,7 +258,7 @@ void reshape(GLFWwindow* win, int w, int h) {
 
 int main(int argc, char* argv[]) {
   if (argc < 2) {
-    std::cerr << "BOK YE OYLE SEY MI OLUR" << std::endl;
+    std::cerr << "No scene file provided." << std::endl;
     exit(1);
   }
   scene.loadFromXml(argv[1]);

@@ -99,6 +99,10 @@ struct Vec3f {
   float Length() const { return sqrt(*this * *this); }
 
   const Vec3f Normalized() const { return *this / this->Length(); }
+  const Vec3f& Normalize() {
+    *this /= this->Length();
+    return *this;
+  }
 
   Vec3i ToVec3i() const {
     Vec3i res;

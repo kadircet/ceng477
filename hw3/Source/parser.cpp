@@ -45,7 +45,10 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
   stream << child->GetText() << std::endl;
   stream >> camera.position.x >> camera.position.y >> camera.position.z;
   stream >> camera.gaze.x >> camera.gaze.y >> camera.gaze.z;
+  camera.gaze.Normalize();
   stream >> camera.up.x >> camera.up.y >> camera.up.z;
+  camera.right = camera.gaze.CrossProduct(camera.up).Normalized();
+  camera.up = camera.right.CrossProduct(camera.gaze);
   stream >> camera.near_plane.x >> camera.near_plane.y >> camera.near_plane.z >>
       camera.near_plane.w;
   stream >> camera.near_distance;

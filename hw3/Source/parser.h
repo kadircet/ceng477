@@ -11,6 +11,7 @@ struct Camera {
   Vec3f position;
   Vec3f gaze;
   Vec3f up;
+  Vec3f right;
   Vec4f near_plane;
   float near_distance;
   float far_distance;
