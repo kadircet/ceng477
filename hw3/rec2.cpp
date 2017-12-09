@@ -73,7 +73,7 @@ int main(int argc, char* argv[]) {
 
       For more info: http://www.glfw.org/docs/latest/window_guide.html
   */
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
 
   /*
