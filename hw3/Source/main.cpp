@@ -75,7 +75,6 @@ static void keyCallback(GLFWwindow* window, int key, int scancode, int action,
                                       camera.up.y, camera.up.z};
         camera.gaze = rot.ToMatrix().MultiplyVector(camera.gaze);
         camera.right = camera.gaze.CrossProduct(camera.up);
-        camera.up = camera.right.CrossProduct(camera.gaze);
         SetCamera();
       } break;
       case GLFW_KEY_D: {
@@ -84,6 +83,21 @@ static void keyCallback(GLFWwindow* window, int key, int scancode, int action,
                                       camera.up.y, camera.up.z};
         camera.gaze = rot.ToMatrix().MultiplyVector(camera.gaze);
         camera.right = camera.gaze.CrossProduct(camera.up);
+        SetCamera();
+      } break;
+      case GLWF_KEY_U: {
+        parser::Camera& camera = scene.camera;
+        const parser::Rotation rot = {0.5f * M_PI / 180, camera.right.x,
+                                      camera.right.y, camera.right.z};
+        camera.gaze = rot.ToMatrix().MultiplyVector(camera.gaze);
+        camera.up = camera.right.CrossProduct(camera.gaze);
+        SetCamera();
+      } break;
+      case GLWF_KEY_J: {
+        parser::Camera& camera = scene.camera;
+        const parser::Rotation rot = {-0.5f * M_PI / 180, camera.right.x,
+                                      camera.right.y, camera.right.z};
+        camera.gaze = rot.ToMatrix().MultiplyVector(camera.gaze);
         camera.up = camera.right.CrossProduct(camera.gaze);
         SetCamera();
       } break;
