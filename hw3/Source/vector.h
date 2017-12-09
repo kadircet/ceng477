@@ -244,7 +244,7 @@ struct Matrix {
 struct Rotation {
   float angle, x, y, z;
 
-  Matrix ToMatrix() {
+  Matrix ToMatrix() const {
     const Vec3f u = Vec3f(x, y, z).Normalized();
     const Vec3f v = ((x != 0 || y != 0) ? Vec3f(-u.y, u.x, .0) : Vec3f(0, 1, 0))
                         .Normalized();
