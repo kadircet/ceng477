@@ -60,6 +60,7 @@ struct Scene {
   std::vector<Vec3f> scalings;
   std::vector<Vec4f> rotations;
   std::vector<Mesh> meshes;
+  uint32_t face_count;
 
   // Functions
   void loadFromXml(const std::string& filepath);

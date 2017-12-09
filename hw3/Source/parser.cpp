@@ -4,6 +4,7 @@
 #include "tinyxml2.h"
 
 void parser::Scene::loadFromXml(const std::string& filepath) {
+  face_count = 0;
   tinyxml2::XMLDocument file;
   std::stringstream stream;
 
@@ -181,7 +182,7 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
           break;
       }
 
-      transformation.id = transformation_id;
+      transformation.id = transformation_id - 1;
       mesh.transformations.push_back(transformation);
     }
 
@@ -194,6 +195,7 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
       face.v0_id--;
       face.v1_id--;
       face.v2_id--;
+      face_count++;
       mesh.faces.push_back(face);
     }
     stream.clear();

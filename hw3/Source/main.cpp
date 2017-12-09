@@ -36,7 +36,6 @@ static void keyCallback(GLFWwindow* window, int key, int scancode, int action,
 
 void display() {
   static bool firstTime = true;
-
   static int vertexPosDataSizeInBytes;
 
   if (firstTime) {
@@ -59,67 +58,44 @@ void display() {
     vertexPosDataSizeInBytes = vertex_data.size() * 3 * sizeof(GLfloat);
     glBufferData(GL_ARRAY_BUFFER, vertexPosDataSizeInBytes, vertex_pos,
                  GL_STATIC_DRAW);
+    delete[] vertex_pos;
 
+    // Store indices.
+    GLuint index_buffer;
+    glGenBuffers(1, &index_buffer);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer);
+    GLuint* indices = new GLuint[scene.face_count * 3];
+    int indices_idx = 0;
     const std::vector<parser::Mesh> meshes = scene.meshes;
-    const parser::Mesh mesh = scene.meshes[0];
-    {
+    for (const parser::Mesh& mesh : meshes) {
       const std::vector<parser::Face> faces = mesh.faces;
-      GLuint index_buffer;
-      GLuint* indices = new GLuint[faces.size() * 3];
-      int indices_idx = 0;
       for (const parser::Face& face : faces) {
         indices[indices_idx++] = face.v0_id;
         indices[indices_idx++] = face.v1_id;
         indices[indices_idx++] = face.v2_id;
       }
-      glGenBuffers(1, &index_buffer);
-      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer);
-      int indexDataSizeInBytes = sizeof(faces.size() * 3 * sizeof(GLuint));
-      glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexDataSizeInBytes, indices,
-                   GL_STATIC_DRAW);
     }
-    /*firstTime = false;
-    glEnableClientState(GL_VERTEX_ARRAY);
-    GLuint indices[] = {
-        0, 1, 2,  // front
-        3, 0, 2,  // front
-        4, 7, 6,  // back
-        5, 4, 6,  // back
-        0, 3, 4,  // left
-        3, 7, 4,  // left
-        2, 1, 5,  // right
-        6, 2, 5,  // right
-        3, 2, 7,  // top
-        2, 6, 7,  // top
-        0, 4, 1,  // bottom
-        4, 5, 1   // bottom
-    };
-    GLfloat vertexPos[] = {
-        -0.5, -0.5, 0.5,   // 0: bottom-left-front
-        0.5,  -0.5, 0.5,   // 1: bottom-right-front
-        0.5,  0.5,  0.5,   // 2: top-right-front
-        -0.5, 0.5,  0.5,   // 3: top-left-front
-        -0.5, -0.5, -0.5,  // 4: bottom-left-back
-        0.5,  -0.5, -0.5,  // 5: bottom-right-back
-        0.5,  0.5,  -0.5,  // 6: top-right-back
-        -0.5, 0.5,  -0.5,  // 7: top-left-back
-    };
-    GLuint vertexAttribBuffer, indexBuffer;
-    glGenBuffers(1, &vertexAttribBuffer);
-    glGenBuffers(1, &indexBuffer);
-    assert(vertexAttribBuffer > 0 && indexBuffer > 0);
-    glBindBuffer(GL_ARRAY_BUFFER, vertexAttribBuffer);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
-    vertexPosDataSizeInBytes = sizeof(vertexPos);
-    int indexDataSizeInBytes = sizeof(indices);
-    glBufferData(GL_ARRAY_BUFFER, vertexPosDataSizeInBytes, vertexPos,
-                 GL_STATIC_DRAW);
+    int indexDataSizeInBytes = scene.face_count * 3 * sizeof(GLuint);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexDataSizeInBytes, indices,
-                 GL_STATIC_DRAW);*/
+                 GL_STATIC_DRAW);
+    delete[] indices;
   }
 
   glVertexPointer(3, GL_FLOAT, 0, 0);
-  glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+
+  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+  glPushMatrix();
+  glTranslatef(scene.translations[2].x, scene.translations[2].y,
+               scene.translations[2].z);
+  glRotatef(scene.rotations[0].x, scene.rotations[0].y, scene.rotations[0].z,
+            scene.rotations[0].w);
+  glRotatef(scene.rotations[0].x, scene.rotations[0].y, scene.rotations[0].z,
+            scene.rotations[0].w);
+  glRotatef(scene.rotations[0].x, scene.rotations[0].y, scene.rotations[0].z,
+            scene.rotations[0].w);
+  glDrawElements(GL_TRIANGLES, scene.face_count * 3 - 6, GL_UNSIGNED_INT,
+                 (const void*)(6 * sizeof(GLuint)));
+  glPopMatrix();
 }
 
 void render() {
@@ -160,7 +136,7 @@ void SetCamera() {
   const Vec3f gaze = camera.gaze.Normalized();
   const Vec3f u = gaze.CrossProduct(camera.up).Normalized();
   const Vec3f v = u.CrossProduct(gaze);
-  const Vec3f center = camera.position + gaze * camera.near_distance;
+  const Vec3f center = eye + gaze * camera.near_distance;
   const parser::Vec4f near_plane = camera.near_plane;
   gluLookAt(eye.x, eye.y, eye.z, center.x, center.y, center.z, v.x, v.y, v.z);
 
@@ -179,13 +155,6 @@ void reshape(GLFWwindow* win, int w, int h) {
   gHeight = h;
 
   glViewport(0, 0, w, h);
-
-  glMatrixMode(GL_PROJECTION);
-  glLoadIdentity();
-  gluPerspective(45, 1, 1, 500);
-
-  glMatrixMode(GL_MODELVIEW);
-  glLoadIdentity();
 }
 
 int main(int argc, char* argv[]) {
@@ -201,7 +170,7 @@ int main(int argc, char* argv[]) {
     exit(EXIT_FAILURE);
   }
 
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
 
   win = glfwCreateWindow(scene.camera.image_width, scene.camera.image_height,
