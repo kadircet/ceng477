@@ -183,9 +183,7 @@ void SetCamera() {
   glLoadIdentity();
   glFrustum(near_plane.x, near_plane.y, near_plane.z, near_plane.w,
             camera.near_distance, camera.far_distance);
-
   glMatrixMode(GL_MODELVIEW);
-  glLoadIdentity();
 }
 
 void reshape(GLFWwindow* win, int w, int h) {
@@ -221,8 +219,6 @@ int main(int argc, char* argv[]) {
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
 
-  scene.camera.image_width = 640;
-  scene.camera.image_height = 480;
   win = glfwCreateWindow(scene.camera.image_width, scene.camera.image_height,
                          "CENG477", NULL, NULL);
   if (!win) {
@@ -241,8 +237,8 @@ int main(int argc, char* argv[]) {
   glfwSetWindowSizeCallback(win, reshape);
 
   Init();
-  // SetCamera();
-  reshape(win, 640, 480);
+  SetCamera();
+  // reshape(win, 640, 480);
   while (!glfwWindowShouldClose(win)) {
     glfwPollEvents();
     render();
