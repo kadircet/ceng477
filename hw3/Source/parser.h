@@ -63,8 +63,6 @@ struct Scene {
   std::vector<PointLight> point_lights;
   std::vector<Material> materials;
   std::vector<Vec3f> vertex_data;
-  std::vector<Vec3f> normal_data;
-  std::vector<size_t> normal_count;
   std::vector<Vec3f> translations;
   std::vector<Vec3f> scalings;
   std::vector<Vec4f> rotations;

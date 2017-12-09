@@ -155,6 +155,7 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
     child = element->FirstChildElement("Material");
     stream << child->GetText() << std::endl;
     stream >> mesh.material_id;
+    mesh.material_id--;
 
     // Get Transformations in order
     mesh.transformations.clear();
