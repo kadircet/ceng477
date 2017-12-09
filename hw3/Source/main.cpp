@@ -85,7 +85,7 @@ static void keyCallback(GLFWwindow* window, int key, int scancode, int action,
         camera.right = camera.gaze.CrossProduct(camera.up);
         SetCamera();
       } break;
-      case GLWF_KEY_U: {
+      case GLFW_KEY_U: {
         parser::Camera& camera = scene.camera;
         const parser::Rotation rot = {0.5f * M_PI / 180, camera.right.x,
                                       camera.right.y, camera.right.z};
@@ -93,7 +93,7 @@ static void keyCallback(GLFWwindow* window, int key, int scancode, int action,
         camera.up = camera.right.CrossProduct(camera.gaze);
         SetCamera();
       } break;
-      case GLWF_KEY_J: {
+      case GLFW_KEY_J: {
         parser::Camera& camera = scene.camera;
         const parser::Rotation rot = {-0.5f * M_PI / 180, camera.right.x,
                                       camera.right.y, camera.right.z};
