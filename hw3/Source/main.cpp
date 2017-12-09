@@ -40,47 +40,46 @@ void display() {
   static int vertexPosDataSizeInBytes;
 
   if (firstTime) {
-    /*    firstTime = false;
-
-        glEnableClientState(GL_VERTEX_ARRAY);
-
-        // Store vertex data.
-        GLuint vertexAttribBuffer;
-        const std::vector<Vec3f> vertex_data = scene.vertex_data;
-        GLfloat* vertex_pos = new GLfloat[vertex_data.size() * 3];
-        int idx = 0;
-        for (const Vec3f& vertex : vertex_data) {
-          vertex_pos[idx++] = vertex.x;
-          vertex_pos[idx++] = vertex.y;
-          vertex_pos[idx++] = vertex.z;
-        }
-        glGenBuffers(1, &vertexAttribBuffer);
-        glBindBuffer(GL_ARRAY_BUFFER, vertexAttribBuffer);
-        vertexPosDataSizeInBytes = vertex_data.size() * 3 * sizeof(GLfloat);
-        glBufferData(GL_ARRAY_BUFFER, vertexPosDataSizeInBytes, vertex_pos,
-                     GL_STATIC_DRAW);
-
-        const std::vector<parser::Mesh> meshes = scene.meshes;
-        for (const parser::Mesh& mesh : meshes) {
-          const std::vector<parser::Face> faces = mesh.faces;
-          GLuint index_buffer;
-          GLuint* indices = new GLuint[faces.size() * 3];
-          int indices_idx = 0;
-          for (const parser::Face& face : faces) {
-            indices[indices_idx++] = face.v0_id;
-            indices[indices_idx++] = face.v1_id;
-            indices[indices_idx++] = face.v2_id;
-          }
-          glGenBuffers(1, &index_buffer);
-          glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer);
-          int indexDataSizeInBytes = sizeof(faces.size() * 3 * sizeof(GLuint));
-          glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexDataSizeInBytes, indices,
-                       GL_STATIC_DRAW);
-        }*/
     firstTime = false;
 
     glEnableClientState(GL_VERTEX_ARRAY);
 
+    // Store vertex data.
+    GLuint vertexAttribBuffer;
+    const std::vector<Vec3f> vertex_data = scene.vertex_data;
+    GLfloat* vertex_pos = new GLfloat[vertex_data.size() * 3];
+    int idx = 0;
+    for (const Vec3f& vertex : vertex_data) {
+      vertex_pos[idx++] = vertex.x;
+      vertex_pos[idx++] = vertex.y;
+      vertex_pos[idx++] = vertex.z;
+    }
+    glGenBuffers(1, &vertexAttribBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, vertexAttribBuffer);
+    vertexPosDataSizeInBytes = vertex_data.size() * 3 * sizeof(GLfloat);
+    glBufferData(GL_ARRAY_BUFFER, vertexPosDataSizeInBytes, vertex_pos,
+                 GL_STATIC_DRAW);
+
+    const std::vector<parser::Mesh> meshes = scene.meshes;
+    const parser::Mesh mesh = scene.meshes[0];
+    {
+      const std::vector<parser::Face> faces = mesh.faces;
+      GLuint index_buffer;
+      GLuint* indices = new GLuint[faces.size() * 3];
+      int indices_idx = 0;
+      for (const parser::Face& face : faces) {
+        indices[indices_idx++] = face.v0_id;
+        indices[indices_idx++] = face.v1_id;
+        indices[indices_idx++] = face.v2_id;
+      }
+      glGenBuffers(1, &index_buffer);
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer);
+      int indexDataSizeInBytes = sizeof(faces.size() * 3 * sizeof(GLuint));
+      glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexDataSizeInBytes, indices,
+                   GL_STATIC_DRAW);
+    }
+    /*firstTime = false;
+    glEnableClientState(GL_VERTEX_ARRAY);
     GLuint indices[] = {
         0, 1, 2,  // front
         3, 0, 2,  // front
@@ -95,7 +94,6 @@ void display() {
         0, 4, 1,  // bottom
         4, 5, 1   // bottom
     };
-
     GLfloat vertexPos[] = {
         -0.5, -0.5, 0.5,   // 0: bottom-left-front
         0.5,  -0.5, 0.5,   // 1: bottom-right-front
@@ -106,24 +104,18 @@ void display() {
         0.5,  0.5,  -0.5,  // 6: top-right-back
         -0.5, 0.5,  -0.5,  // 7: top-left-back
     };
-
     GLuint vertexAttribBuffer, indexBuffer;
-
     glGenBuffers(1, &vertexAttribBuffer);
     glGenBuffers(1, &indexBuffer);
-
     assert(vertexAttribBuffer > 0 && indexBuffer > 0);
-
     glBindBuffer(GL_ARRAY_BUFFER, vertexAttribBuffer);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
-
     vertexPosDataSizeInBytes = sizeof(vertexPos);
     int indexDataSizeInBytes = sizeof(indices);
-
     glBufferData(GL_ARRAY_BUFFER, vertexPosDataSizeInBytes, vertexPos,
                  GL_STATIC_DRAW);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexDataSizeInBytes, indices,
-                 GL_STATIC_DRAW);
+                 GL_STATIC_DRAW);*/
   }
 
   glVertexPointer(3, GL_FLOAT, 0, 0);
@@ -140,15 +132,8 @@ void render() {
   glClearDepth(1.0f);
   glClearStencil(0);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-  static float angle = 0;
-  angle += 0.1;
-  GLfloat deltaZ = -30;
 
   ++framesRendered;
-  glLoadIdentity();
-  glTranslatef(-6, -6, deltaZ);
-  glRotatef(angle, 1, 0, 0);
-  glScalef(5, 5, 5);
   display();
 
   std::chrono::time_point<std::chrono::system_clock> end =
