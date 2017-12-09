@@ -49,7 +49,6 @@ void applyTransformation(const parser::Transformation& transformation) {
 
 void display() {
   static bool firstTime = true;
-  static int vertexPosDataSizeInBytes;
 
   if (firstTime) {
     firstTime = false;
@@ -59,7 +58,10 @@ void display() {
     // Store vertex data.
     GLuint vertexAttribBuffer;
     const std::vector<Vec3f> vertex_data = scene.vertex_data;
-    GLfloat* vertex_pos = new GLfloat[vertex_data.size() * 3];
+    const size_t vertex_count = vertex_data.size();
+    std::vector<Vec3f> normal_data(vertex_count);
+    std::vector<size_t> normal_count(vertex_count);
+    GLfloat* vertex_pos = new GLfloat[vertex_count * 3];
     int idx = 0;
     for (const Vec3f& vertex : vertex_data) {
       vertex_pos[idx++] = vertex.x;
@@ -68,9 +70,11 @@ void display() {
     }
     glGenBuffers(1, &vertexAttribBuffer);
     glBindBuffer(GL_ARRAY_BUFFER, vertexAttribBuffer);
-    vertexPosDataSizeInBytes = vertex_data.size() * 3 * sizeof(GLfloat);
-    glBufferData(GL_ARRAY_BUFFER, vertexPosDataSizeInBytes, vertex_pos,
+    const size_t vertexPosDataSizeInBytes =
+        vertex_data.size() * 3 * sizeof(GLfloat);
+    glBufferData(GL_ARRAY_BUFFER, 2 * vertexPosDataSizeInBytes, 0,
                  GL_STATIC_DRAW);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, vertexPosDataSizeInBytes, vertex_pos);
     delete[] vertex_pos;
 
     // Store indices.
@@ -78,6 +82,7 @@ void display() {
     glGenBuffers(1, &index_buffer);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer);
     GLuint* indices = new GLuint[scene.face_count * 3];
+    GLfloat* vertex_normals = new GLfloat[vertex_data.size() * 3];
     int indices_idx = 0;
     const std::vector<parser::Mesh> meshes = scene.meshes;
     for (const parser::Mesh& mesh : meshes) {
@@ -86,12 +91,21 @@ void display() {
         indices[indices_idx++] = face.v0_id;
         indices[indices_idx++] = face.v1_id;
         indices[indices_idx++] = face.v2_id;
+        normal_data[face.v0_id] += face.normal;
+        normal_data[face.v1_id] += face.normal;
+        normal_data[face.v2_id] += face.normal;
+        normal_count[face.v0_id]++;
+        normal_count[face.v1_id]++;
+        normal_count[face.v2_id]++;
       }
     }
     int indexDataSizeInBytes = scene.face_count * 3 * sizeof(GLuint);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexDataSizeInBytes, indices,
                  GL_STATIC_DRAW);
     delete[] indices;
+    glBufferSubData(GL_ARRAY_BUFFER, vertexPosDataSizeInBytes,
+                    vertexPosDataSizeInBytes, vertex_normals);
+    delete[] vertex_normals;
   }
 
   glVertexPointer(3, GL_FLOAT, 0, 0);

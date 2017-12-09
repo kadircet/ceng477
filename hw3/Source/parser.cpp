@@ -196,6 +196,8 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
       face.v1_id--;
       face.v2_id--;
       face_count++;
+      face.CalculateNormal(vertex_data[face.v0_id], vertex_data[face.v1_id],
+                           vertex_data[face.v2_id]);
       mesh.faces.push_back(face);
     }
     stream.clear();

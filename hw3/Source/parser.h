@@ -39,6 +39,13 @@ struct Face {
   int v0_id;
   int v1_id;
   int v2_id;
+  Vec3f normal;
+
+  void CalculateNormal(const Vec3f& v0, const Vec3f& v1, const Vec3f& v2) {
+    const Vec3f ba = v0 - v1;
+    const Vec3f ca = v0 - v2;
+    normal = ba.CrossProduct(ca).Normalized();
+  }
 };
 
 struct Mesh {
@@ -56,6 +63,8 @@ struct Scene {
   std::vector<PointLight> point_lights;
   std::vector<Material> materials;
   std::vector<Vec3f> vertex_data;
+  std::vector<Vec3f> normal_data;
+  std::vector<size_t> normal_count;
   std::vector<Vec3f> translations;
   std::vector<Vec3f> scalings;
   std::vector<Vec4f> rotations;
