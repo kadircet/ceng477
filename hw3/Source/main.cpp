@@ -31,7 +31,15 @@ static void errorCallback(int error, const char* description) {
   fprintf(stderr, "Error(%d): %s\n", error, description);
 }
 
-void SetLightSources();
+void UpdateLightSources() {
+  const std::vector<parser::PointLight> point_lights = scene.point_lights;
+  for (size_t i = 0; i < point_lights.size(); i++) {
+    const parser::PointLight light = point_lights[i];
+    GLfloat light_position[4] = {light.position.x, light.position.y,
+                                 light.position.z, 1.};
+    glLightfv(GL_LIGHT0 + i, GL_POSITION, light_position);
+  }
+}
 
 void SetCamera() {
   const parser::Camera camera = scene.camera;
@@ -47,7 +55,7 @@ void SetCamera() {
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
   gluLookAt(eye.x, eye.y, eye.z, center.x, center.y, center.z, v.x, v.y, v.z);
-  SetLightSources();
+  UpdateLightSources();
 }
 
 static void keyCallback(GLFWwindow* window, int key, int /*scancode*/,
@@ -254,11 +262,9 @@ void SetLightSources() {
   const std::vector<parser::PointLight> point_lights = scene.point_lights;
   for (size_t i = 0; i < point_lights.size(); i++) {
     const parser::PointLight light = point_lights[i];
-    GLfloat light_position[4] = {light.position.x, light.position.y,
-                                 light.position.z, 1.};
-    glLightfv(GL_LIGHT0 + i, GL_POSITION, light_position);
     const GLfloat intensity[4] = {light.intensity.x, light.intensity.y,
                                   light.intensity.z, 1.};
+    // glLightfv(GL_LIGHT0 + i, GL_AMBIENT, ambient);
     glLightfv(GL_LIGHT0 + i, GL_DIFFUSE, intensity);
     glLightfv(GL_LIGHT0 + i, GL_SPECULAR, intensity);
     glEnable(GL_LIGHT0 + i);
@@ -307,6 +313,7 @@ int main(int argc, char* argv[]) {
   glfwSetWindowSizeCallback(win, reshape);
 
   Init();
+  SetLightSources();
   SetCamera();
   // reshape(win, 640, 480);
   while (!glfwWindowShouldClose(win)) {
