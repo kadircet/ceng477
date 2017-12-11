@@ -21,6 +21,8 @@ constexpr const float kRotateSpeed = 5 * M_PI / 180;
 
 void Init() {
   glEnable(GL_DEPTH_TEST);
+  glEnable(GL_CULL_FACE);
+  glCullFace(GL_BACK);
   glEnableClientState(GL_VERTEX_ARRAY);
   glEnableClientState(GL_NORMAL_ARRAY);
 }
@@ -37,21 +39,19 @@ void SetCamera() {
   const Vec3f center = eye + camera.gaze * camera.near_distance;
   const Vec3f v = camera.up;
   const parser::Vec4f near_plane = camera.near_plane;
-  glLoadIdentity();
-  gluLookAt(eye.x, eye.y, eye.z, center.x, center.y, center.z, v.x, v.y, v.z);
-
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
   glFrustum(near_plane.x, near_plane.y, near_plane.z, near_plane.w,
             camera.near_distance, camera.far_distance);
+
   glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity();
+  gluLookAt(eye.x, eye.y, eye.z, center.x, center.y, center.z, v.x, v.y, v.z);
   SetLightSources();
 }
 
-static void keyCallback(GLFWwindow* window, int key, int scancode, int action,
-                        int mods) {
-  (void)scancode;
-  (void)mods;
+static void keyCallback(GLFWwindow* window, int key, int /*scancode*/,
+                        int action, int /*mods*/) {
   if (action == GLFW_PRESS || action == GLFW_REPEAT) {
     if (GLFW_KEY_0 < key && key < GLFW_KEY_9) {
       const size_t light_index = key - GLFW_KEY_0 - 1;
@@ -69,11 +69,9 @@ static void keyCallback(GLFWwindow* window, int key, int scancode, int action,
         break;
       case GLFW_KEY_W:
         scene.camera.position += scene.camera.gaze.Normalized() * kMoveSpeed;
-        SetCamera();
         break;
       case GLFW_KEY_S:
         scene.camera.position += scene.camera.gaze.Normalized() * -kMoveSpeed;
-        SetCamera();
         break;
       case GLFW_KEY_A: {
         parser::Camera& camera = scene.camera;
@@ -81,7 +79,6 @@ static void keyCallback(GLFWwindow* window, int key, int scancode, int action,
                                       camera.up.z};
         camera.gaze = rot.ToMatrix().MultiplyVector(camera.gaze);
         camera.right = camera.gaze.CrossProduct(camera.up);
-        SetCamera();
       } break;
       case GLFW_KEY_D: {
         parser::Camera& camera = scene.camera;
@@ -89,7 +86,6 @@ static void keyCallback(GLFWwindow* window, int key, int scancode, int action,
                                       camera.up.z};
         camera.gaze = rot.ToMatrix().MultiplyVector(camera.gaze);
         camera.right = camera.gaze.CrossProduct(camera.up);
-        SetCamera();
       } break;
       case GLFW_KEY_U: {
         parser::Camera& camera = scene.camera;
@@ -97,7 +93,6 @@ static void keyCallback(GLFWwindow* window, int key, int scancode, int action,
                                       camera.right.y, camera.right.z};
         camera.gaze = rot.ToMatrix().MultiplyVector(camera.gaze);
         camera.up = camera.right.CrossProduct(camera.gaze);
-        SetCamera();
       } break;
       case GLFW_KEY_J: {
         parser::Camera& camera = scene.camera;
@@ -105,11 +100,12 @@ static void keyCallback(GLFWwindow* window, int key, int scancode, int action,
                                       camera.right.y, camera.right.z};
         camera.gaze = rot.ToMatrix().MultiplyVector(camera.gaze);
         camera.up = camera.right.CrossProduct(camera.gaze);
-        SetCamera();
       } break;
     }
+    SetCamera();
   }
 }
+
 void applyTransformation(const parser::Transformation& transformation) {
   const std::string& type = transformation.transformation_type;
   if (type[0] == 'T') {
