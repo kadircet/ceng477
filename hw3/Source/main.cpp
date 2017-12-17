@@ -16,15 +16,17 @@ static GLFWwindow* win = NULL;
 static bool lights_enabled = true;
 static bool light_disabled[10];
 
-constexpr const float kMoveSpeed = .5;
-constexpr const float kRotateSpeed = 5 * M_PI / 180;
+constexpr const float kMoveSpeed = .05;
+constexpr const float kRotateSpeed = .5 * M_PI / 180;
 
 void Init() {
   glEnable(GL_DEPTH_TEST);
-  glEnable(GL_CULL_FACE);
-  glCullFace(GL_BACK);
+  // glEnable(GL_CULL_FACE);
+  // glCullFace(GL_BACK);
   glEnableClientState(GL_VERTEX_ARRAY);
   glEnableClientState(GL_NORMAL_ARRAY);
+  glEnable(GL_LIGHTING);
+  glShadeModel(GL_SMOOTH);
 }
 
 static void errorCallback(int error, const char* description) {
@@ -58,55 +60,60 @@ void SetCamera() {
   UpdateLightSources();
 }
 
+void ToggleLightSource(const size_t light_index) {
+  light_disabled[light_index] ? glEnable(GL_LIGHT0 + light_index)
+                              : glDisable(GL_LIGHT0 + light_index);
+  light_disabled[light_index] ^= 1;
+}
+
 static void keyCallback(GLFWwindow* window, int key, int /*scancode*/,
                         int action, int /*mods*/) {
-  if (action == GLFW_PRESS || action == GLFW_REPEAT) {
-    if (GLFW_KEY_0 < key && key < GLFW_KEY_9) {
+  if (action == GLFW_PRESS) {
+    if (GLFW_KEY_0 < key && key < GLFW_KEY_8) {
       const size_t light_index = key - GLFW_KEY_0 - 1;
-      light_disabled[light_index] ? glEnable(GL_LIGHT0 + light_index)
-                                  : glDisable(GL_LIGHT0 + light_index);
-      light_disabled[light_index] ^= 1;
+      ToggleLightSource(light_index);
     }
     switch (key) {
       case GLFW_KEY_ESCAPE:
         glfwSetWindowShouldClose(window, GLFW_TRUE);
         break;
       case GLFW_KEY_0:
-        lights_enabled ? glDisable(GL_LIGHTING) : glEnable(GL_LIGHTING);
-        lights_enabled ^= 1;
+        for (size_t light_index = 0; light_index < 8; light_index++) {
+          ToggleLightSource(light_index);
+        }
         break;
       case GLFW_KEY_W:
-        scene.camera.position += scene.camera.gaze.Normalized() * kMoveSpeed;
+        scene.camera.position += scene.camera.gaze * kMoveSpeed;
         break;
       case GLFW_KEY_S:
-        scene.camera.position += scene.camera.gaze.Normalized() * -kMoveSpeed;
+        scene.camera.position += scene.camera.gaze * -kMoveSpeed;
         break;
       case GLFW_KEY_A: {
         parser::Camera& camera = scene.camera;
         const parser::Rotation rot = {kRotateSpeed, camera.up.x, camera.up.y,
                                       camera.up.z};
-        camera.gaze = rot.ToMatrix().MultiplyVector(camera.gaze);
+        camera.gaze = rot.ToMatrix().MultiplyVector(camera.gaze).Normalized();
         camera.right = camera.gaze.CrossProduct(camera.up);
       } break;
       case GLFW_KEY_D: {
         parser::Camera& camera = scene.camera;
         const parser::Rotation rot = {-kRotateSpeed, camera.up.x, camera.up.y,
                                       camera.up.z};
-        camera.gaze = rot.ToMatrix().MultiplyVector(camera.gaze);
+        camera.gaze = rot.ToMatrix().MultiplyVector(camera.gaze).Normalized();
         camera.right = camera.gaze.CrossProduct(camera.up);
       } break;
       case GLFW_KEY_U: {
         parser::Camera& camera = scene.camera;
         const parser::Rotation rot = {kRotateSpeed, camera.right.x,
                                       camera.right.y, camera.right.z};
-        camera.gaze = rot.ToMatrix().MultiplyVector(camera.gaze);
+        camera.gaze = rot.ToMatrix().MultiplyVector(camera.gaze).Normalized();
         camera.up = camera.right.CrossProduct(camera.gaze);
       } break;
       case GLFW_KEY_J: {
         parser::Camera& camera = scene.camera;
         const parser::Rotation rot = {-kRotateSpeed, camera.right.x,
                                       camera.right.y, camera.right.z};
-        camera.gaze = rot.ToMatrix().MultiplyVector(camera.gaze);
+        camera.gaze = rot.ToMatrix().MultiplyVector(camera.gaze).Normalize();
         camera.up = camera.right.CrossProduct(camera.gaze);
       } break;
     }
@@ -230,53 +237,29 @@ void display() {
 }
 
 void render() {
-  static int framesRendered = 0;
-  static std::chrono::time_point<std::chrono::system_clock> start =
-      std::chrono::system_clock::now();
-
   glClearColor(scene.background_color.x, scene.background_color.y,
                scene.background_color.z, 1);
   glClearDepth(1.0f);
   glClearStencil(0);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-  ++framesRendered;
   display();
-
-  std::chrono::time_point<std::chrono::system_clock> end =
-      std::chrono::system_clock::now();
-  std::chrono::duration<double> elapsedTime = end - start;
-  if (elapsedTime.count() > 1.) {
-    start = std::chrono::system_clock::now();
-    std::cout << "FPS:" << framesRendered << std::endl;
-    framesRendered = 0;
-  }
 }
 
 void SetLightSources() {
-  glEnable(GL_LIGHTING);
-  glShadeModel(GL_SMOOTH);
   const GLfloat ambient[4] = {scene.ambient_light.x, scene.ambient_light.y,
                               scene.ambient_light.z, 1.};
-  glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambient);
+  // glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambient);
   const std::vector<parser::PointLight> point_lights = scene.point_lights;
   for (size_t i = 0; i < point_lights.size(); i++) {
     const parser::PointLight light = point_lights[i];
     const GLfloat intensity[4] = {light.intensity.x, light.intensity.y,
                                   light.intensity.z, 1.};
-    // glLightfv(GL_LIGHT0 + i, GL_AMBIENT, ambient);
+    glLightfv(GL_LIGHT0 + i, GL_AMBIENT, ambient);
     glLightfv(GL_LIGHT0 + i, GL_DIFFUSE, intensity);
     glLightfv(GL_LIGHT0 + i, GL_SPECULAR, intensity);
     glEnable(GL_LIGHT0 + i);
   }
-}
-
-void reshape(GLFWwindow* win, int w, int h) {
-  (void)win;
-
-  w = w < 1 ? 1 : w;
-  h = h < 1 ? 1 : h;
-  glViewport(0, 0, w, h);
 }
 
 int main(int argc, char* argv[]) {
@@ -310,16 +293,14 @@ int main(int argc, char* argv[]) {
   }
 
   glfwSetKeyCallback(win, keyCallback);
-  glfwSetWindowSizeCallback(win, reshape);
 
   Init();
   SetLightSources();
   SetCamera();
-  // reshape(win, 640, 480);
   while (!glfwWindowShouldClose(win)) {
-    glfwPollEvents();
     render();
     glfwSwapBuffers(win);
+    glfwWaitEvents();
   }
   glfwDestroyWindow(win);
   glfwTerminate();
