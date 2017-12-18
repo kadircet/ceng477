@@ -79,6 +79,7 @@ static void keyCallback(GLFWwindow* window, int key, int /*scancode*/,
         break;
       case GLFW_KEY_0:
         for (size_t light_index = 0; light_index < 8; light_index++) {
+          light_disabled[light_index] = 0;
           ToggleLightSource(light_index);
         }
         break;
