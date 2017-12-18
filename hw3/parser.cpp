@@ -163,31 +163,32 @@ void parser::Scene::loadFromXml(const std::string& filepath) {
     // Get Transformations in order
     mesh.transformations.clear();
     child = element->FirstChildElement("Transformations");
+    if (child && child->GetText() != nullptr && child->GetText()[0] != 0) {
+      stream << child->GetText() << std::endl;
 
-    stream << child->GetText() << std::endl;
+      std::string transformation_encoding;
 
-    std::string transformation_encoding;
+      while (stream >> transformation_encoding &&
+             transformation_encoding.length() > 0) {
+        char transformation_type = transformation_encoding[0];
+        int transformation_id = std::stoi(transformation_encoding.substr(1));
 
-    while (stream >> transformation_encoding &&
-           transformation_encoding.length() > 0) {
-      char transformation_type = transformation_encoding[0];
-      int transformation_id = std::stoi(transformation_encoding.substr(1));
+        Transformation transformation;
+        switch (transformation_type) {
+          case 't':
+            transformation.transformation_type = "Translation";
+            break;
+          case 'r':
+            transformation.transformation_type = "Rotation";
+            break;
+          case 's':
+            transformation.transformation_type = "Scaling";
+            break;
+        }
 
-      Transformation transformation;
-      switch (transformation_type) {
-        case 't':
-          transformation.transformation_type = "Translation";
-          break;
-        case 'r':
-          transformation.transformation_type = "Rotation";
-          break;
-        case 's':
-          transformation.transformation_type = "Scaling";
-          break;
+        transformation.id = transformation_id - 1;
+        mesh.transformations.push_back(transformation);
       }
-
-      transformation.id = transformation_id - 1;
-      mesh.transformations.push_back(transformation);
     }
 
     stream.clear();
