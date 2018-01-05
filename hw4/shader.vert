@@ -6,7 +6,7 @@ layout(location = 0) in vec3 position;
 uniform mat4 MVP;   // ModelViewProjection Matrix
 uniform mat4 MVIT;  // Inverse Transpose of ModelView Matrix
 uniform mat4 MV;    // Inverse Transpose of ModelView Matrix
-uniform vec4 cameraPosition;
+uniform vec3 cameraPosition;
 uniform float heightFactor;
 
 // Texture-related data
@@ -26,7 +26,7 @@ const int delta[2] = int[2](1, -1);
 const int mult[2] = int[2](1, -1);
 
 float GetHeight(vec2 texture_coordinate) {
-  vec3 texture_color = texture(rgbTexture, textureCoordinate).xyz;
+  vec3 texture_color = texture(rgbTexture, texture_coordinate).xyz;
   return heightFactor * dot(texture_color, limunance);
 }
 
@@ -51,7 +51,6 @@ void main() {
                      heightTexture / 2, 1.));
 
   textureCoordinate = GetTextureCoordinate(position);
-  vec4 texture_color = texture(rgbTexture, textureCoordinate);
   vec3 current_vertex = position;
   current_vertex.y = GetHeight(textureCoordinate);
 

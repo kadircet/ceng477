@@ -3,14 +3,8 @@
 // Output Color
 out vec4 color;
 
-uniform mat4 MVP;  // ModelViewProjection Matrix
-uniform mat4 MV;   // ModelView idMVPMatrix
-uniform vec4 cameraPosition;
-
 // Texture-related data;
 uniform sampler2D rgbTexture;
-uniform int widthTexture;
-uniform int heightTexture;
 
 // Data from Vertex Shader
 in vec2 textureCoordinate;
