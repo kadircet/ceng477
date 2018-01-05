@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/rotate_vector.hpp>
 
 class CameraController {
  public:
@@ -16,7 +17,8 @@ class CameraController {
         gaze_(gaze),
         up_(up),
         height_factor_(10.f) {
-    Move(0);
+    Move();
+    left_ = glm::cross(up, gaze);
     UpdateMatrices();
   }
 
@@ -27,9 +29,12 @@ class CameraController {
   const glm::vec3& GetPosition() const { return position_; }
   const float& GetHeightFactor() const { return height_factor_; }
 
-  void Move(const float unit);
+  void Move();
   void IncrementHeight() { height_factor_ += .5; }
   void DecrementHeight() { height_factor_ -= .5; }
+  void IncrementSpeed(const float unit) { speed_ += unit; }
+  void ChangePitch(const float unit);
+  void ChangeYaw(const float unit);
   void SetPositionY(const float new_y) {
     position_.y = new_y;
     UpdateMatrices();
@@ -46,12 +51,26 @@ class CameraController {
   glm::vec3 position_;
   glm::vec3 gaze_;
   glm::vec3 up_;
+  glm::vec3 left_;
 
   float height_factor_;
+  float speed_;
 };
 
-void CameraController::Move(const float unit) {
-  position_ += unit * gaze_;
+void CameraController::ChangePitch(const float unit) {
+  gaze_ = glm::rotate(gaze_, -unit, left_);
+  up_ = glm::cross(gaze_, left_);
+  UpdateMatrices();
+}
+
+void CameraController::ChangeYaw(const float unit) {
+  gaze_ = glm::rotate(gaze_, -unit, up_);
+  left_ = glm::cross(up_, gaze_);
+  UpdateMatrices();
+}
+
+void CameraController::Move() {
+  position_ += speed_ * gaze_;
   UpdateMatrices();
 }
 

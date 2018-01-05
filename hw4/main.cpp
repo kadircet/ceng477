@@ -12,6 +12,14 @@ CameraController camera_controller;
 CameraController light_vcs;
 ShaderManager shadow_map_shader;
 ShaderManager height_map_shader;
+int width_win, height_win;
+bool IsFullScreen;
+
+constexpr const float kRotationDegrees = .1;
+constexpr const float kSpeedIncrement = .1;
+
+static void keyCallback(GLFWwindow* window, int key, int /*scancode*/,
+                        int action, int /*mods*/);
 
 void InitOpenGL() {
   glEnable(GL_DEPTH_TEST);
@@ -40,7 +48,6 @@ void InitShadowMapping(const int width, const int height) {
                   GL_COMPARE_R_TO_TEXTURE);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, width, height, 0,
                GL_DEPTH_COMPONENT, GL_FLOAT, 0);
-  glGenerateMipmap(GL_TEXTURE_2D);
 
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
                          depth_texture, 0);
@@ -107,6 +114,42 @@ static void errorCallback(int error, const char* description) {
   fprintf(stderr, "Error: %d(%s)\n", error, description);
 }
 
+static void ResizeCallback(GLFWwindow*, int width, int height) {
+  width_win = width;
+  height_win = height;
+}
+
+void InitializeWindow() {
+  glfwSetErrorCallback(errorCallback);
+
+  if (!glfwInit()) {
+    exit(-1);
+  }
+
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
+
+  win = glfwCreateWindow(600, 600, "CENG477 - HW4", NULL, NULL);
+  width_win = height_win = 600;
+
+  if (!win) {
+    glfwTerminate();
+    exit(-1);
+  }
+  glfwMakeContextCurrent(win);
+  glfwSetKeyCallback(win, keyCallback);
+  glfwSetWindowSizeCallback(win, ResizeCallback);
+
+  GLenum err = glewInit();
+  if (err != GLEW_OK) {
+    fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
+
+    glfwTerminate();
+    exit(-1);
+  }
+}
+
 static void keyCallback(GLFWwindow* window, int key, int /*scancode*/,
                         int action, int /*mods*/) {
   if (action == GLFW_PRESS) {
@@ -129,6 +172,30 @@ static void keyCallback(GLFWwindow* window, int key, int /*scancode*/,
         height_map_shader.Update("depthMVP", bias_matrix * light_vcs.GetMVP());
         height_map_shader.Update("lightPosition", light_vcs.GetPosition());
         break;
+      case GLFW_KEY_A:
+        camera_controller.ChangeYaw(-kRotationDegrees);
+        break;
+      case GLFW_KEY_D:
+        camera_controller.ChangeYaw(kRotationDegrees);
+        break;
+      case GLFW_KEY_W:
+        camera_controller.ChangePitch(kRotationDegrees);
+        break;
+      case GLFW_KEY_S:
+        camera_controller.ChangePitch(-kRotationDegrees);
+        break;
+      case GLFW_KEY_U:
+        camera_controller.IncrementSpeed(kSpeedIncrement);
+        break;
+      case GLFW_KEY_J:
+        camera_controller.IncrementSpeed(-kSpeedIncrement);
+        break;
+      case GLFW_KEY_F:
+        glfwSetWindowMonitor(window,
+                             IsFullScreen ? NULL : glfwGetPrimaryMonitor(), 100,
+                             100, width_win, height_win, GLFW_DONT_CARE);
+        IsFullScreen ^= 1;
+        break;
     }
   }
 }
@@ -139,33 +206,7 @@ int main(int argc, char* argv[]) {
     exit(-1);
   }
 
-  glfwSetErrorCallback(errorCallback);
-
-  if (!glfwInit()) {
-    exit(-1);
-  }
-
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
-
-  win = glfwCreateWindow(600, 600, "CENG477 - HW4", NULL, NULL);
-
-  if (!win) {
-    glfwTerminate();
-    exit(-1);
-  }
-  glfwMakeContextCurrent(win);
-  glfwSetKeyCallback(win, keyCallback);
-
-  GLenum err = glewInit();
-  if (err != GLEW_OK) {
-    fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
-
-    glfwTerminate();
-    exit(-1);
-  }
-
+  InitializeWindow();
   InitOpenGL();
 
   int width_texture, height_texture;
@@ -203,6 +244,8 @@ int main(int argc, char* argv[]) {
   height_map_shader.Update("depthTexture", 1);
 
   while (glfwWindowShouldClose(win) == 0) {
+    camera_controller.Move();
+
     glBindFramebuffer(GL_FRAMEBUFFER, shadow_frame);
     glViewport(0, 0, width_texture, height_texture);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -215,7 +258,7 @@ int main(int argc, char* argv[]) {
                              GL_UNSIGNED_INT, static_cast<const void*>(0));
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glViewport(0, 0, 600, 600);
+    glViewport(0, 0, width_win, height_win);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     height_map_shader.UseShader();
@@ -233,7 +276,7 @@ int main(int argc, char* argv[]) {
                              GL_UNSIGNED_INT, static_cast<const void*>(0));
 
     glfwSwapBuffers(win);
-    glfwWaitEvents();
+    glfwPollEvents();
   }
 
   glfwDestroyWindow(win);

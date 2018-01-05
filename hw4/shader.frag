@@ -17,7 +17,7 @@ in vec3 ToCameraVector;  // Vector from Vertex to Camera;
 void main() {
   // Assignment Constants below
   // get the texture color
-  vec4 textureColor = texture(rgbTexture, textureCoordinate, -5);
+  vec4 textureColor = texture(rgbTexture, textureCoordinate, -1);
   float visibility = textureProj(
       depthTexture,
       vec4(depthCoordinate.xy, depthCoordinate.z - .001, depthCoordinate.w));
