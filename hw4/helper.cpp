@@ -1,15 +1,17 @@
 #include "helper.h"
 
-void initShaders() {
-  idProgramShader = glCreateProgram();
+GLuint initShaders(const string& vertex_shader, const string& fragment_shader) {
+  const GLuint idProgramShader = glCreateProgram();
 
-  idVertexShader = initVertexShader("shader.vert");
-  idFragmentShader = initFragmentShader("shader.frag");
+  const GLuint idVertexShader = initVertexShader(vertex_shader);
+  const GLuint idFragmentShader = initFragmentShader(fragment_shader);
 
   glAttachShader(idProgramShader, idVertexShader);
   glAttachShader(idProgramShader, idFragmentShader);
 
   glLinkProgram(idProgramShader);
+
+  return idProgramShader;
 }
 
 GLuint initVertexShader(const string& filename) {
@@ -77,6 +79,8 @@ bool readDataFromFile(const string& fileName, string& data) {
 }
 
 void initTexture(char* filename, int* w, int* h) {
+  GLuint idJpegTexture;
+
   int width, height;
 
   unsigned char* raw_image = NULL;

@@ -139,7 +139,7 @@ int main(int argc, char* argv[]) {
   }
 
   InitOpenGL();
-  initShaders();
+  idProgramShader = initShaders("shader.vert", "shader.frag");
   glUseProgram(idProgramShader);
   int widthTexture, heightTexture;
   initTexture(argv[1], &widthTexture, &heightTexture);
@@ -154,6 +154,7 @@ int main(int argc, char* argv[]) {
   glUniform1f(heigt_factor_idx, 10.);
   const GLuint camera_position_idx =
       glGetUniformLocation(idProgramShader, "cameraPosition");
+  std::cout << "CameraID: " << camera_position_idx << std::endl;
   const glm::vec3 position(widthTexture / 2., widthTexture / 10.,
                            -widthTexture / 4.);
   glUniform4f(camera_position_idx, position.x, position.y, position.z, 1.);
