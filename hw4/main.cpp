@@ -1,4 +1,5 @@
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "helper.h"
 
@@ -10,10 +11,23 @@ GLuint idFragmentShader;
 GLuint idVertexShader;
 GLuint idJpegTexture;
 GLuint idMVPMatrix;
+GLuint idMVMatrix;
+GLuint idMVITMatrix;
+
+void InitOpenGL() {
+  glEnable(GL_DEPTH_TEST);
+  glDepthFunc(GL_LESS);
+  glEnable(GL_CULL_FACE);
+}
 
 void InitMVP(const int width) {
+#ifdef GLM_FORCE_RADIANS
   const glm::mat4 projection_matrix =
       glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 1000.0f);
+#else
+  const glm::mat4 projection_matrix =
+      glm::perspective(45.0f, 1.0f, 0.1f, 1000.0f);
+#endif
   const glm::vec3 position(width / 2., width / 10., -width / 4.);
   const glm::vec3 gaze(0, 0, 1);
   const glm::mat4 view_matrix =
@@ -23,6 +37,14 @@ void InitMVP(const int width) {
   const glm::mat4 MVP = projection_matrix * view_matrix * model_matrix;
   idMVPMatrix = glGetUniformLocation(idProgramShader, "MVP");
   glUniformMatrix4fv(idMVPMatrix, 1, GL_FALSE, &MVP[0][0]);
+
+  const glm::mat4 MV = view_matrix * model_matrix;
+  idMVMatrix = glGetUniformLocation(idProgramShader, "MV");
+  glUniformMatrix4fv(idMVMatrix, 1, GL_FALSE, &MV[0][0]);
+
+  const glm::mat4 MVIT = glm::inverseTranspose(MV);
+  idMVITMatrix = glGetUniformLocation(idProgramShader, "MVIT");
+  glUniformMatrix4fv(idMVITMatrix, 1, GL_FALSE, &MVIT[0][0]);
 }
 
 size_t InitFaces(const int width_texture, const int height_texture) {
@@ -116,6 +138,7 @@ int main(int argc, char* argv[]) {
     exit(-1);
   }
 
+  InitOpenGL();
   initShaders();
   glUseProgram(idProgramShader);
   int widthTexture, heightTexture;
@@ -129,6 +152,11 @@ int main(int argc, char* argv[]) {
   const GLuint heigt_factor_idx =
       glGetUniformLocation(idProgramShader, "heightFactor");
   glUniform1f(heigt_factor_idx, 10.);
+  const GLuint camera_position_idx =
+      glGetUniformLocation(idProgramShader, "cameraPosition");
+  const glm::vec3 position(widthTexture / 2., widthTexture / 10.,
+                           -widthTexture / 4.);
+  glUniform4f(camera_position_idx, position.x, position.y, position.z, 1.);
 
   InitMVP(widthTexture);
   InitVertices(widthTexture, heightTexture);
@@ -136,7 +164,7 @@ int main(int argc, char* argv[]) {
 
   while (!glfwWindowShouldClose(win)) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glDrawElements(GL_TRIANGLES, number_triangles * 3, GL_UNSIGNED_INT,
+    glDrawElements(GL_TRIANGLES, number_triangles * 6, GL_UNSIGNED_INT,
                    static_cast<void*>(0));
     glfwSwapBuffers(win);
     glfwWaitEvents();
