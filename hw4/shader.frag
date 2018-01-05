@@ -18,9 +18,9 @@ void main() {
   // Assignment Constants below
   // get the texture color
   vec4 textureColor = texture(rgbTexture, textureCoordinate, -5);
-  float visibility =
-      texture(depthTexture,
-              vec3(depthCoordinate.xy, depthCoordinate.z / depthCoordinate.w));
+  float visibility = textureProj(
+      depthTexture,
+      vec4(depthCoordinate.xy, depthCoordinate.z - .001, depthCoordinate.w));
 
   // apply Phong shading by using the following parameters
   vec4 ka = vec4(0.25, 0.25, 0.25, 1.0);  // reflectance coeff. for ambient

@@ -7,6 +7,7 @@
 
 class CameraController {
  public:
+  CameraController() {}
   CameraController(const glm::vec3& position, const glm::vec3& gaze,
                    const glm::vec3& up, const float fovy, const float aspect,
                    const float near, const float far)
@@ -27,6 +28,12 @@ class CameraController {
   const float& GetHeightFactor() const { return height_factor_; }
 
   void Move(const float unit);
+  void IncrementHeight() { height_factor_ += .5; }
+  void DecrementHeight() { height_factor_ -= .5; }
+  void SetPositionY(const float new_y) {
+    position_.y = new_y;
+    UpdateMatrices();
+  }
 
  private:
   void UpdateMatrices();
@@ -45,11 +52,11 @@ class CameraController {
 
 void CameraController::Move(const float unit) {
   position_ += unit * gaze_;
-  view_matrix_ = glm::lookAt(position_, position_ + gaze_, up_);
   UpdateMatrices();
 }
 
 void CameraController::UpdateMatrices() {
+  view_matrix_ = glm::lookAt(position_, position_ + gaze_, up_);
   mvp_matrix_ = proj_matrix_ * view_matrix_;
   mvit_matrix_ = inverseTranspose(view_matrix_);
 }

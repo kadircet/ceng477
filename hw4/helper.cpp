@@ -78,7 +78,7 @@ bool readDataFromFile(const string& fileName, string& data) {
   return true;
 }
 
-void initTexture(char* filename, int* w, int* h) {
+GLuint initTexture(char* filename, int* w, int* h) {
   GLuint idJpegTexture;
 
   int width, height;
@@ -100,7 +100,7 @@ void initTexture(char* filename, int* w, int* h) {
 
   if (!infile) {
     printf("Error opening jpeg file %s\n!", filename);
-    return;
+    exit(1);
   }
   printf("Texture filename = %s\n", filename);
 
@@ -133,7 +133,6 @@ void initTexture(char* filename, int* w, int* h) {
 
   glGenTextures(1, &idJpegTexture);
   glBindTexture(GL_TEXTURE_2D, idJpegTexture);
-  glActiveTexture(GL_TEXTURE0);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB,
                GL_UNSIGNED_BYTE, raw_image);
 
@@ -148,4 +147,6 @@ void initTexture(char* filename, int* w, int* h) {
   free(row_pointer[0]);
   free(raw_image);
   fclose(infile);
+
+  return idJpegTexture;
 }

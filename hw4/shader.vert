@@ -73,7 +73,7 @@ void main() {
           CalculateSurfaceNormal(current_vertex, neighbour1, neighbour2);
     }
   }
-  vertexNormal = vec3(MVIT * vec4(normalize(vertexNormal), .0));
+  vertexNormal = normalize(vec3(MVIT * vec4(normalize(vertexNormal), .0)));
 
   gl_Position = MVP * vec4(current_vertex, 1.);
   depthCoordinate = depthMVP * vec4(current_vertex, 1.);

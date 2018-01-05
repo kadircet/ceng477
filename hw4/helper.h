@@ -16,6 +16,6 @@ GLuint initShaders(const string&, const string&);
 GLuint initVertexShader(const string& filename);
 GLuint initFragmentShader(const string& filename);
 bool readDataFromFile(const string& fileName, string& data);
-void initTexture(char* filename, int* w, int* h);
+GLuint initTexture(char* filename, int* w, int* h);
 
 #endif

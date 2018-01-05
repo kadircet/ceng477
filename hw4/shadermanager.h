@@ -10,6 +10,7 @@
 
 class ShaderManager {
  public:
+  ShaderManager() {}
   ShaderManager(const string& vertex_shader, const string& fragment_shader);
   void Render(const GLenum mode, const GLsizei count, const GLenum type,
               const void* indices);

@@ -1,9 +1,17 @@
+// Press Q to bring the light down.
+
 #include <glm/glm.hpp>
 #include "cameracontroller.h"
 #include "helper.h"
 #include "shadermanager.h"
 
 static GLFWwindow* win = NULL;
+GLuint shadow_frame;
+GLuint depth_texture;
+CameraController camera_controller;
+CameraController light_vcs;
+ShaderManager shadow_map_shader;
+ShaderManager height_map_shader;
 
 void InitOpenGL() {
   glEnable(GL_DEPTH_TEST);
@@ -15,17 +23,14 @@ void InitOpenGL() {
 const glm::mat4 bias_matrix(0.5, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0,
                             0.5, 0.0, 0.5, 0.5, 0.5, 1.0);
 
-GLuint InitShadowMapping(const int width, const int height) {
-  GLuint shadow_frame;
+void InitShadowMapping(const int width, const int height) {
   glGenFramebuffers(1, &shadow_frame);
   glBindFramebuffer(GL_FRAMEBUFFER, shadow_frame);
 
-  GLuint depth_texture;
   glGenTextures(1, &depth_texture);
-  glActiveTexture(GL_TEXTURE1);
+  glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, depth_texture);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16, width, height, 0,
-               GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -33,11 +38,17 @@ GLuint InitShadowMapping(const int width, const int height) {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE,
                   GL_COMPARE_R_TO_TEXTURE);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, width, height, 0,
+               GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+  glGenerateMipmap(GL_TEXTURE_2D);
 
-  glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depth_texture, 0);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
+                         depth_texture, 0);
   glDrawBuffer(GL_NONE);
 
-  return shadow_frame;
+  if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+    std::cout << "FAILED!!!" << std::endl;
+  }
 }
 
 size_t InitFaces(const int width_texture, const int height_texture) {
@@ -68,8 +79,6 @@ size_t InitFaces(const int width_texture, const int height_texture) {
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, number_triangles * 3 * sizeof(GLuint),
                indices, GL_STATIC_DRAW);
   delete[] indices;
-  std::cout << "NumberTriangles: " << number_triangles << std::endl;
-  std::cout << "MaxVertexId: " << max_vertex_id << std::endl;
 
   return number_triangles;
 }
@@ -92,11 +101,36 @@ void InitVertices(const int width_texture, const int height_texture) {
 
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, static_cast<void*>(0));
-  std::cout << "NumberVertices: " << vertices_count << std::endl;
 }
 
 static void errorCallback(int error, const char* description) {
   fprintf(stderr, "Error: %d(%s)\n", error, description);
+}
+
+static void keyCallback(GLFWwindow* window, int key, int /*scancode*/,
+                        int action, int /*mods*/) {
+  if (action == GLFW_PRESS) {
+    switch (key) {
+      case GLFW_KEY_ESCAPE:
+        glfwSetWindowShouldClose(window, GLFW_TRUE);
+        break;
+      case GLFW_KEY_O:
+        camera_controller.IncrementHeight();
+        break;
+      case GLFW_KEY_L:
+        camera_controller.DecrementHeight();
+        break;
+      case GLFW_KEY_Q:
+        light_vcs.SetPositionY(50);
+        shadow_map_shader.UseShader();
+        shadow_map_shader.Update("MVP", light_vcs.GetMVP());
+
+        height_map_shader.UseShader();
+        height_map_shader.Update("depthMVP", bias_matrix * light_vcs.GetMVP());
+        height_map_shader.Update("lightPosition", light_vcs.GetPosition());
+        break;
+    }
+  }
 }
 
 int main(int argc, char* argv[]) {
@@ -122,6 +156,7 @@ int main(int argc, char* argv[]) {
     exit(-1);
   }
   glfwMakeContextCurrent(win);
+  glfwSetKeyCallback(win, keyCallback);
 
   GLenum err = glewInit();
   if (err != GLEW_OK) {
@@ -134,31 +169,31 @@ int main(int argc, char* argv[]) {
   InitOpenGL();
 
   int width_texture, height_texture;
-  initTexture(argv[1], &width_texture, &height_texture);
+  GLuint jpeg_texture = initTexture(argv[1], &width_texture, &height_texture);
 
   // Init geometry.
   InitVertices(width_texture, height_texture);
   const size_t number_triangles = InitFaces(width_texture, height_texture);
-  const glm::vec3 position_light(width_texture / 2., 50, height_texture / 2.);
+  const glm::vec3 position_light(
+      width_texture / 2., width_texture + height_texture, height_texture / 2.);
   const glm::vec3 gaze(0, 0, 1);
   const glm::vec3 up(0, 1, 0);
-
   const glm::vec3 camera_position(width_texture / 2., width_texture / 10.,
                                   -width_texture / 4.);
-  const glm::vec3 center(camera_position + gaze);
-  CameraController camera_controller(camera_position, gaze, up, 45., 1., .1,
-                                     1000.);
-  CameraController light_vcs(position_light, -up, gaze, 179., 1., .1, 1000.);
 
-  ShaderManager shadow_map_shader("shadow.vert", "shadow.frag");
+  camera_controller =
+      CameraController(camera_position, gaze, up, 45., 1., .1, 1000.);
+  light_vcs = CameraController(position_light, -up, gaze, 179., 1., .1, 1000.);
+
+  shadow_map_shader = ShaderManager("shadow.vert", "shadow.frag");
   shadow_map_shader.UseShader();
   shadow_map_shader.Update("widthTexture", width_texture);
   shadow_map_shader.Update("heightTexture", height_texture);
   shadow_map_shader.Update("MVP", light_vcs.GetMVP());
 
-  const GLuint shadow_frame = InitShadowMapping(width_texture, height_texture);
+  InitShadowMapping(width_texture, height_texture);
 
-  ShaderManager height_map_shader("shader.vert", "shader.frag");
+  height_map_shader = ShaderManager("shader.vert", "shader.frag");
   height_map_shader.UseShader();
   height_map_shader.Update("widthTexture", width_texture);
   height_map_shader.Update("heightTexture", height_texture);
@@ -167,8 +202,7 @@ int main(int argc, char* argv[]) {
   height_map_shader.Update("rgbTexture", 0);
   height_map_shader.Update("depthTexture", 1);
 
-  while (glfwGetKey(win, GLFW_KEY_ESCAPE) != GLFW_PRESS &&
-         glfwWindowShouldClose(win) == 0) {
+  while (glfwWindowShouldClose(win) == 0) {
     glBindFramebuffer(GL_FRAMEBUFFER, shadow_frame);
     glViewport(0, 0, width_texture, height_texture);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -191,6 +225,10 @@ int main(int argc, char* argv[]) {
     height_map_shader.Update("cameraPosition", camera_controller.GetPosition());
     height_map_shader.Update("heightFactor",
                              camera_controller.GetHeightFactor());
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, jpeg_texture);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, depth_texture);
     height_map_shader.Render(GL_TRIANGLES, number_triangles * 3,
                              GL_UNSIGNED_INT, static_cast<const void*>(0));
 
