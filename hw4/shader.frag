@@ -5,8 +5,10 @@ out vec4 color;
 
 // Texture-related data;
 uniform sampler2D rgbTexture;
+uniform sampler2DShadow depthTexture;
 
 // Data from Vertex Shader
+in vec4 depthCoordinate;
 in vec2 textureCoordinate;
 in vec3 vertexNormal;    // For Lighting computation
 in vec3 ToLightVector;   // Vector from Vertex to Light;
@@ -16,6 +18,9 @@ void main() {
   // Assignment Constants below
   // get the texture color
   vec4 textureColor = texture(rgbTexture, textureCoordinate, -5);
+  float visibility =
+      texture(depthTexture,
+              vec3(depthCoordinate.xy, depthCoordinate.z / depthCoordinate.w));
 
   // apply Phong shading by using the following parameters
   vec4 ka = vec4(0.25, 0.25, 0.25, 1.0);  // reflectance coeff. for ambient
@@ -38,7 +43,8 @@ void main() {
   vec4 specular = ks * pow(cos_alpha, specExp) * Is;
 
   // compute the color using the following equation
-  color = vec4(
-      clamp(textureColor.xyz * vec3(ambient + diffuse + specular), 0.0, 1.0),
-      1.0);
+  color = visibility *
+          vec4(clamp(textureColor.xyz * vec3(ambient + diffuse + specular), 0.0,
+                     1.0),
+               1.0);
 }

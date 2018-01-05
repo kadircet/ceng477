@@ -6,7 +6,9 @@ layout(location = 0) in vec3 position;
 uniform mat4 MVP;   // ModelViewProjection Matrix
 uniform mat4 MVIT;  // Inverse Transpose of ModelView Matrix
 uniform mat4 MV;    // Inverse Transpose of ModelView Matrix
+uniform mat4 depthMVP;
 uniform vec3 cameraPosition;
+uniform vec3 lightPosition;
 uniform float heightFactor;
 
 // Texture-related data
@@ -19,6 +21,7 @@ out vec2 textureCoordinate;  // For texture-color
 out vec3 vertexNormal;       // For Lighting computation
 out vec3 ToLightVector;      // Vector from Vertex to Light;
 out vec3 ToCameraVector;     // Vector from Vertex to Camera;
+out vec4 depthCoordinate;
 
 const vec3 limunance = vec3(.2126, .7152, .0722);
 
@@ -46,9 +49,7 @@ vec2 GetTextureCoordinate(vec3 position) {
 }
 
 void main() {
-  vec3 light_position =
-      vec3(MV * vec4(widthTexture / 2., widthTexture + heightTexture,
-                     heightTexture / 2, 1.));
+  vec3 light_position = vec3(MV * vec4(lightPosition, 1.));
 
   textureCoordinate = GetTextureCoordinate(position);
   vec3 current_vertex = position;
@@ -75,4 +76,5 @@ void main() {
   vertexNormal = vec3(MVIT * vec4(normalize(vertexNormal), .0));
 
   gl_Position = MVP * vec4(current_vertex, 1.);
+  depthCoordinate = depthMVP * vec4(current_vertex, 1.);
 }

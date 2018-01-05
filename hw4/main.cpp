@@ -9,42 +9,21 @@ void InitOpenGL() {
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LESS);
   glEnable(GL_CULL_FACE);
+  glCullFace(GL_BACK);
 }
 
-/*void InitShadowMapping(const int width, const int height,
-                       const size_t number_triangles) {
-  GLuint id_program_shader = initShaders("shadow.vert", "shadow.frag");
+const glm::mat4 bias_matrix(0.5, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0,
+                            0.5, 0.0, 0.5, 0.5, 0.5, 1.0);
 
-  const glm::vec3 position_light(width / 2., width + height, height / 4.);
-  const glm::vec3 position(width / 2., width / 10., -width / 4.);
-  const glm::vec3 gaze(0, 0, 1);
-  const glm::mat4 view_matrix =
-      glm::lookAt(position_light, position + gaze, glm::vec3(0, 1, 0));
-  const glm::mat4 model_matrix = glm::mat4(1.0f);
+GLuint InitShadowMapping(const int width, const int height) {
+  GLuint shadow_frame;
+  glGenFramebuffers(1, &shadow_frame);
+  glBindFramebuffer(GL_FRAMEBUFFER, shadow_frame);
 
-  const glm::mat4 MVP = projection_matrix * view_matrix * model_matrix;
-  GLuint idMVPMatrix = glGetUniformLocation(id_program_shader, "MVP");
-  glUniformMatrix4fv(idMVPMatrix, 1, GL_FALSE, &MVP[0][0]);
-
-  const GLuint width_idx =
-      glGetUniformLocation(id_program_shader, "widthTexture");
-  glUniform1i(width_idx, width);
-
-  const GLuint height_idx =
-      glGetUniformLocation(id_program_shader, "heightTexture");
-  glUniform1i(height_idx, height);
-
-  const GLuint heigt_factor_idx =
-      glGetUniformLocation(id_program_shader, "heightFactor");
-  glUniform1f(heigt_factor_idx, 10.);
-
-  GLuint shadow_buffer;
-  glGenFramebuffers(1, &shadow_buffer);
-  glBindFramebuffer(GL_FRAMEBUFFER, shadow_buffer);
-
-  GLuint depthTexture;
-  glGenTextures(1, &depthTexture);
-  glBindTexture(GL_TEXTURE_2D, depthTexture);
+  GLuint depth_texture;
+  glGenTextures(1, &depth_texture);
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D, depth_texture);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16, width, height, 0,
                GL_DEPTH_COMPONENT, GL_FLOAT, 0);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -55,21 +34,11 @@ void InitOpenGL() {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE,
                   GL_COMPARE_R_TO_TEXTURE);
 
-  glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthTexture, 0);
+  glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depth_texture, 0);
   glDrawBuffer(GL_NONE);
 
-  glViewport(0, 0, width, height);
-  glEnable(GL_CULL_FACE);
-  glCullFace(GL_BACK);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-  glUseProgram(id_program_shader);
-  glDrawElements(GL_TRIANGLES, number_triangles * 3, GL_UNSIGNED_INT,
-                 static_cast<void*>(0));
-
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  glViewport(0, 0, 600, 600);
-}*/
+  return shadow_frame;
+}
 
 size_t InitFaces(const int width_texture, const int height_texture) {
   const size_t vertices_per_row = width_texture + 1;
@@ -170,18 +139,52 @@ int main(int argc, char* argv[]) {
   // Init geometry.
   InitVertices(width_texture, height_texture);
   const size_t number_triangles = InitFaces(width_texture, height_texture);
+  const glm::vec3 position_light(width_texture / 2., 50, height_texture / 2.);
+  const glm::vec3 gaze(0, 0, 1);
+  const glm::vec3 up(0, 1, 0);
 
-  CameraController camera_controller(
-      glm::vec3(width_texture / 2., width_texture / 10., -width_texture / 4.),
-      glm::vec3(0, 0, 1), glm::vec3(0, 1, 0), 45., 1., .1, 1000.);
+  const glm::vec3 camera_position(width_texture / 2., width_texture / 10.,
+                                  -width_texture / 4.);
+  const glm::vec3 center(camera_position + gaze);
+  CameraController camera_controller(camera_position, gaze, up, 45., 1., .1,
+                                     1000.);
+  CameraController light_vcs(position_light, -up, gaze, 179., 1., .1, 1000.);
+
+  ShaderManager shadow_map_shader("shadow.vert", "shadow.frag");
+  shadow_map_shader.UseShader();
+  shadow_map_shader.Update("widthTexture", width_texture);
+  shadow_map_shader.Update("heightTexture", height_texture);
+  shadow_map_shader.Update("MVP", light_vcs.GetMVP());
+
+  const GLuint shadow_frame = InitShadowMapping(width_texture, height_texture);
 
   ShaderManager height_map_shader("shader.vert", "shader.frag");
   height_map_shader.UseShader();
   height_map_shader.Update("widthTexture", width_texture);
   height_map_shader.Update("heightTexture", height_texture);
+  height_map_shader.Update("depthMVP", bias_matrix * light_vcs.GetMVP());
+  height_map_shader.Update("lightPosition", position_light);
+  height_map_shader.Update("rgbTexture", 0);
+  height_map_shader.Update("depthTexture", 1);
 
-  while (!glfwWindowShouldClose(win)) {
+  while (glfwGetKey(win, GLFW_KEY_ESCAPE) != GLFW_PRESS &&
+         glfwWindowShouldClose(win) == 0) {
+    glBindFramebuffer(GL_FRAMEBUFFER, shadow_frame);
+    glViewport(0, 0, width_texture, height_texture);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    shadow_map_shader.UseShader();
+    shadow_map_shader.Update("heightFactor",
+                             camera_controller.GetHeightFactor());
+
+    shadow_map_shader.Render(GL_TRIANGLES, number_triangles * 3,
+                             GL_UNSIGNED_INT, static_cast<const void*>(0));
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, 600, 600);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    height_map_shader.UseShader();
     height_map_shader.Update("MVP", camera_controller.GetMVP());
     height_map_shader.Update("MVIT", camera_controller.GetMVIT());
     height_map_shader.Update("MV", camera_controller.GetView());
