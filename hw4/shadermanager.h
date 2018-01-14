@@ -1,9 +1,9 @@
 #ifndef SHADERMANAGER_H_
 #define SHADERMANAGER_H_
 
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_inverse.hpp>
-#include <glm/gtc/matrix_transform.hpp>
+#include "glm/glm.hpp"
+#include "glm/gtc/matrix_inverse.hpp"
+#include "glm/gtc/matrix_transform.hpp"
 #include "helper.h"
 
 #include <unordered_map>

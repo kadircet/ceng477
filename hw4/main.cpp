@@ -1,7 +1,7 @@
 // Press Q to bring the light down.
 
-#include <glm/glm.hpp>
 #include "cameracontroller.h"
+#include "glm/glm.hpp"
 #include "helper.h"
 #include "shadermanager.h"
 
