@@ -13,6 +13,7 @@ CameraController light_vcs;
 ShaderManager shadow_map_shader;
 ShaderManager height_map_shader;
 int width_win, height_win;
+int old_width, old_height;
 bool IsFullScreen;
 
 constexpr const float kRotationDegrees = .1;
@@ -130,8 +131,8 @@ void InitializeWindow() {
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
 
-  win = glfwCreateWindow(600, 600, "CENG477 - HW4", NULL, NULL);
   width_win = height_win = 600;
+  win = glfwCreateWindow(width_win, height_win, "CENG477 - HW4", NULL, NULL);
 
   if (!win) {
     glfwTerminate();
@@ -191,6 +192,17 @@ static void keyCallback(GLFWwindow* window, int key, int /*scancode*/,
         camera_controller.IncrementSpeed(-kSpeedIncrement);
         break;
       case GLFW_KEY_F:
+        if (IsFullScreen) {
+          width_win = old_width;
+          height_win = old_height;
+        } else {
+          old_width = width_win;
+          old_height = height_win;
+          static GLFWmonitor* primary_monitor = glfwGetPrimaryMonitor();
+          const static GLFWvidmode* mode = glfwGetVideoMode(primary_monitor);
+          width_win = mode->width;
+          height_win = mode->height;
+        }
         glfwSetWindowMonitor(window,
                              IsFullScreen ? NULL : glfwGetPrimaryMonitor(), 100,
                              100, width_win, height_win, GLFW_DONT_CARE);
