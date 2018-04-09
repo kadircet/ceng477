@@ -5,3 +5,4 @@ Computer Graphics(CENG477) course.
 - Shadow Mapping
 - OpenGL
 - Transformations
+- RayTracer in C++(hw1 and hw2)
